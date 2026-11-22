@@ -1,0 +1,698 @@
+[
+  {
+    "source": "app/controllers/accounts_controller.rb",
+    "line": 7,
+    "action": "login",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/accounts_controller.rb",
+    "line": 21,
+    "action": "logout",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/accounts_controller.rb",
+    "line": 27,
+    "action": "welcome",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/accounts_controller.rb",
+    "line": 31,
+    "action": "reset_password",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/accounts_controller.rb",
+    "line": 52,
+    "action": "edit_composer_login",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/accounts_controller.rb",
+    "line": 61,
+    "action": "new_composer_login",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/accounts_controller.rb",
+    "line": 113,
+    "action": "send_success_account_email",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/base_controller.rb",
+    "line": 11,
+    "action": "set_substruct_defaults",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/content_nodes_controller.rb",
+    "line": 6,
+    "action": "list",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 6,
+    "action": "index",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 12,
+    "action": "only_product_editor?",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 22,
+    "action": "spam_some_composers",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 31,
+    "action": "spam_all_composers",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 36,
+    "action": "spam_composer",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 44,
+    "action": "destroy",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 54,
+    "action": "edit_current_user",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 68,
+    "action": "spam_composers_and_render",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 80,
+    "action": "spam_all_composers_pre",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 84,
+    "action": "single_composer_stats",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 94,
+    "action": "list",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 106,
+    "action": "new",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 112,
+    "action": "new_original_song",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 118,
+    "action": "new_arrangement_song",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 124,
+    "action": "edit_song_easy",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 138,
+    "action": "edit",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 146,
+    "action": "with_problems",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 163,
+    "action": "self",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 167,
+    "action": "duplicate",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 173,
+    "action": "new_same_author",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 185,
+    "action": "duplicate_helper",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 202,
+    "action": "regenerate",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 217,
+    "action": "regenerate_internal",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 248,
+    "action": "save",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 252,
+    "action": "save_internal",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 504,
+    "action": "remove_download_ajax",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 514,
+    "action": "add_current_product_problems_to_flash",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 527,
+    "action": "do_download_mp3_from_url",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 541,
+    "action": "get_temp_file_no_extension",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 545,
+    "action": "do_download_pdf_from_url",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 555,
+    "action": "download",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 563,
+    "action": "save_local_file_as_upload_image",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 579,
+    "action": "add_download_from_url",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/products_controller.rb",
+    "line": 588,
+    "action": "add_download_from_local_file",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/tags_controller.rb",
+    "line": 3,
+    "action": "index",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/tags_controller.rb",
+    "line": 8,
+    "action": "alphabetize_children",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/tags_controller.rb",
+    "line": 16,
+    "action": "list",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/tags_controller.rb",
+    "line": 38,
+    "action": "update_tag_rank",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/tags_controller.rb",
+    "line": 52,
+    "action": "create",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/tags_controller.rb",
+    "line": 65,
+    "action": "update",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/tags_controller.rb",
+    "line": 84,
+    "action": "destroy",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/users_controller.rb",
+    "line": 13,
+    "action": "index",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/users_controller.rb",
+    "line": 17,
+    "action": "list",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/users_controller.rb",
+    "line": 22,
+    "action": "new",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/users_controller.rb",
+    "line": 32,
+    "action": "edit",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/admin/users_controller.rb",
+    "line": 48,
+    "action": "destroy",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/content_nodes_controller.rb",
+    "line": 6,
+    "action": "show_by_name",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 6,
+    "action": "session_object",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 11,
+    "action": "wishlist",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 16,
+    "action": "add_to_wishlist",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 31,
+    "action": "remove_wishlist_item",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 37,
+    "action": "session_id",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 44,
+    "action": "session_rand",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 49,
+    "action": "session_ip",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 53,
+    "action": "look_for_recent_comment",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 65,
+    "action": "session_info",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 69,
+    "action": "check_if_out_of_space",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 77,
+    "action": "competition",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 96,
+    "action": "competition_results",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 102,
+    "action": "add_comment_competition",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 117,
+    "action": "add_comment",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 132,
+    "action": "is_spam_comment?",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 142,
+    "action": "add_comment_helper",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 192,
+    "action": "product_matches",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 200,
+    "action": "redirect_to_original_url",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 204,
+    "action": "redirect_to_original_url_v",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 209,
+    "action": "redirect_to_original_url_helper",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 229,
+    "action": "redirect_to_tag",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 234,
+    "action": "render_404_with_search_field",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 240,
+    "action": "show",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 287,
+    "action": "filter_by_current_main_tag",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 303,
+    "action": "change_global_filter",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 314,
+    "action": "render_home",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 332,
+    "action": "render_cached_if_exists",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 349,
+    "action": "render_and_save_to_cache",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 363,
+    "action": "show_by_tags",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 462,
+    "action": "get_product_alpha_tag_ids",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 466,
+    "action": "setup_alpha_tag_sizes",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 483,
+    "action": "rand_for_product",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 496,
+    "action": "randomize_but_keep_titles_together",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 510,
+    "action": "download_file",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 515,
+    "action": "inline_download_file",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 519,
+    "action": "ambiguous_download",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 523,
+    "action": "not_a_bot",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 565,
+    "action": "logged_in_anytype_user?",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 569,
+    "action": "download_helper",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 595,
+    "action": "index",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 617,
+    "action": "most_recently_added",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 629,
+    "action": "look_for_exact_matching_tags",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 645,
+    "action": "composer_all_song_stats",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 651,
+    "action": "all_songs_with_strings",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 664,
+    "action": "all_songs_with_strings_non_memoized",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 673,
+    "action": "search",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/music_controller.rb",
+    "line": 792,
+    "action": "paginate_and_filter",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/questions_controller.rb",
+    "line": 4,
+    "action": "index",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/questions_controller.rb",
+    "line": 8,
+    "action": "faq",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/questions_controller.rb",
+    "line": 18,
+    "action": "ask",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/questions_controller.rb",
+    "line": 33,
+    "action": "generate_random_minimum_1",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/questions_controller.rb",
+    "line": 37,
+    "action": "create_faq",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/questions_controller.rb",
+    "line": 46,
+    "action": "is_spam_comment?",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/questions_controller.rb",
+    "line": 51,
+    "action": "send_question",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/substruct_application_controller.rb",
+    "line": 5,
+    "action": "redirect_to_sacredsheetmusic",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/substruct_application_controller.rb",
+    "line": 15,
+    "action": "set_substruct_view_defaults",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/substruct_application_controller.rb",
+    "line": 30,
+    "action": "get_nav_tags",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/youtube_edl_controller.rb",
+    "line": 6,
+    "action": "combine_arrays",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/youtube_edl_controller.rb",
+    "line": 20,
+    "action": "control_youtube",
+    "status": "pending mapping"
+  },
+  {
+    "source": "app/controllers/youtube_edl_controller.rb",
+    "line": 31,
+    "action": "translate_string_to_seconds",
+    "status": "pending mapping"
+  }
+]

@@ -1,0 +1,13 @@
+node_modules/
+.cloudflare/
+.wrangler/
+.react-router/
+build/
+dist/
+.dev.vars*
+.env*
+!.env.example
+playwright-report/
+test-results/
+.superpowers/
+.DS_Store
