@@ -1,10 +1,467 @@
-import{useRef,useState}from'react';import{Link,redirect,useLoaderData,type LoaderFunctionArgs}from'react-router';import{cloudflareContext}from'../lib/context.server';import{getViewer}from'../lib/auth.server';import{getTags,first,rows,type FileRecord}from'../lib/db.server';import{ownedArrangement}from'../lib/storage.server';
-export async function loader({request,params,context}:LoaderFunctionArgs){const{env}=context.get(cloudflareContext);const viewer=await getViewer(request,env);if(!viewer)return redirect('/accounts/login');let item:any=null;let files:FileRecord[]=[];let selected:string[]=[];if(params.id){await ownedArrangement(env,viewer,params.id);item=await first(env,'SELECT * FROM arrangements WHERE id=?',[params.id]);files=await rows(env,"SELECT * FROM files WHERE arrangement_id=? AND state='published' ORDER BY rank",[params.id]);selected=(await rows<{tag_id:string}>(env,'SELECT tag_id FROM arrangement_tags WHERE arrangement_id=?',[params.id])).map(t=>t.tag_id);}return{item,files,selected,tags:await getTags(env),original:params.mode?.includes('original')??false};}
-async function api(path:string,body:unknown,signal?:AbortSignal){const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal});const value=await response.json() as any;if(!response.ok)throw new Error(value.error||'The request could not be completed. Please retry.');return value;}
-const types:Record<string,string>={pdf:'application/pdf',mp3:'audio/mpeg',mid:'audio/midi',midi:'audio/midi',wav:'audio/wav',aac:'audio/aac',m4a:'audio/mp4',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',musicxml:'application/vnd.recordare.musicxml+xml',mxl:'application/vnd.recordare.musicxml'};
-export default function Editor(){const{item,files,selected,tags,original}=useLoaderData<typeof loader>();const[id,setId]=useState(item?.id||'');const[code,setCode]=useState(item?.code||'');const[status,setStatus]=useState('');const[busy,setBusy]=useState(false);const[progress,setProgress]=useState(0);const[attached,setAttached]=useState(files);const[convert,setConvert]=useState(false);const controller=useRef<AbortController|null>(null);const completed=useRef(new Set<string>());const form=useRef<HTMLFormElement>(null);
- async function upload(file:File,kind:string,arrangementId:string,signal:AbortSignal){const key=[file.name,file.size,file.lastModified,kind].join(':');if(completed.current.has(key))return;const contentType=types[file.name.toLowerCase().split('.').at(-1)||'']||file.type;const ticket=await api('/api/uploads/reserve',{arrangementId,filename:file.name,size:file.size,contentType,kind},signal);try{for(let offset=0,part=1;offset<file.size;offset+=ticket.partSize,part++){const response=await fetch('/api/uploads/part/'+ticket.id+'?part='+part,{method:'POST',body:file.slice(offset,offset+ticket.partSize),signal});if(!response.ok){const error=await response.json() as any;throw new Error(error.error||'The file transfer was interrupted.');}setProgress(Math.round(Math.min(file.size,offset+ticket.partSize)/file.size*100));}const saved=await api('/api/uploads/complete/'+ticket.id,{},signal);completed.current.add(key);setAttached(old=>[...old,saved]);}catch(error){await api('/api/uploads/cancel/'+ticket.id,{}).catch(()=>undefined);throw error;}}
- async function save(event:React.FormEvent<HTMLFormElement>){event.preventDefault();const data=new FormData(event.currentTarget);const abort=new AbortController();controller.current=abort;setBusy(true);setStatus('Saving your song draft…');setProgress(0);try{const result=await api('/api/editor',{id:id||undefined,title:data.get('title'),description:data.get('description'),lyrics:data.get('lyrics'),hymn:data.get('hymn'),sourceUrl:data.get('sourceUrl'),youtubeId:data.get('youtubeId'),difficulty:data.get('difficulty'),original:data.get('original')==='on',voicing:data.getAll('voicing').join(', '),tagIds:[...data.getAll('tags'),...tags.filter(t=>data.getAll('voicing').includes(t.name)).map(t=>t.id)],rights:data.get('rights')==='on'},abort.signal);setId(result.id);setCode(result.code);sessionStorage.setItem('ssm-editor-draft',result.id);history.replaceState(history.state,'','/admin/products/edit_song_easy/'+result.id);for(const [name,kind]of[['score','score'],['recording','audio'],['attachments','attachment'],['preview','preview']]){for(const value of data.getAll(name)){if(!(value instanceof File)||!value.size)continue;let file=value;if(convert&&kind==='audio'&&/\.(wav|aac|m4a)$/i.test(file.name)){setStatus('Converting recording in your browser…');const media=await import('../lib/client/media');file=await media.convertRecording(file,abort.signal,setProgress);}setStatus('Uploading '+file.name+'…');await upload(file,kind,result.id,abort.signal);if(kind==='score'&&/\.pdf$/i.test(file.name)){try{setStatus('Preparing the first-page preview…');const media=await import('../lib/client/media');const thumbnail=await media.pdfThumbnail(file,abort.signal);await upload(thumbnail,'preview',result.id,abort.signal);}catch(error){if(abort.signal.aborted)throw error;setStatus('PDF saved. A preview can be regenerated by reopening the editor.');}}}}await api('/api/editor',{intent:'publish',id:result.id,publish:data.get('publish')==='on'},abort.signal);setStatus(data.get('publish')==='on'?'Song saved and published.':'Song draft saved.');sessionStorage.removeItem('ssm-editor-draft');}catch(error){setStatus(abort.signal.aborted?'Upload cancelled. Your song draft is saved in your workspace. Choose the files and save again to retry.':(error instanceof Error?error.message:'Saving failed.')+' Your draft is available in your workspace.');}finally{setBusy(false);controller.current=null;}}
- async function remove(file:FileRecord){try{await api('/api/editor',{intent:'remove-file',id:file.id});setAttached(old=>old.filter(f=>f.id!==file.id));}catch(error){setStatus(String(error));}}
- async function move(index:number,direction:number){const next=[...attached];[next[index],next[index+direction]]=[next[index+direction],next[index]];await api('/api/editor',{intent:'order',id,files:next.map(f=>f.id)});setAttached(next);}
- return <><p><Link to="/admin">← Composer workspace</Link></p><h1>{item?'Edit song':original?'Add an original song':'Add an arrangement'}</h1><p>Upload only music and files you have permission to share. Files can be up to 120 MiB; each image can be up to 10 MiB.</p><form ref={form} onSubmit={save} className="editor-form"><label>Song name<input name="title" defaultValue={item?.title} required minLength={2} maxLength={180}/></label><label><input type="checkbox" name="original" defaultChecked={item?!!item.original:original}/> This is an original song</label><label>Original hymn / song title<input name="hymn" defaultValue={item?.hymn}/></label><fieldset><legend>Voicing / instrumentation</legend><div className="checkbox-grid">{tags.filter(t=>['voicing','instrument'].includes(t.type)).map(t=><label key={t.id}><input type="checkbox" name="voicing" value={t.name} defaultChecked={item?.voicing.split(', ').includes(t.name)}/>{t.name}</label>)}</div></fieldset><fieldset><legend>Topics and categories</legend><div className="checkbox-grid">{tags.filter(t=>!['voicing','instrument'].includes(t.type)).map(t=><label key={t.id}><input type="checkbox" name="tags" value={t.id} defaultChecked={selected.includes(t.id)}/>{t.name}{t.rights_warning&&<small>{t.rights_warning}</small>}</label>)}</div></fieldset><label>Difficulty<select name="difficulty" defaultValue={item?.difficulty||'Intermediate'}>{['Beginning','Easy','Intermediate','Advanced','Difficult'].map(t=><option key={t}>{t}</option>)}</select></label><label>Description / song background<textarea name="description" defaultValue={item?.description} rows={5} maxLength={20000}/></label><label>Lyrics<textarea name="lyrics" defaultValue={item?.lyrics} rows={5} maxLength={50000}/></label><label>Original song page (optional)<input type="url" name="sourceUrl" defaultValue={item?.source_url}/></label><label>YouTube video address or ID (optional)<input name="youtubeId" defaultValue={item?.youtube_id}/></label><fieldset><legend>Music files</legend><label>PDF sheet music<input type="file" name="score" accept="application/pdf,.pdf" multiple/></label><label>Recording<input type="file" name="recording" accept=".mp3,.wav,.aac,.m4a" multiple/></label><label><input type="checkbox" checked={convert} onChange={e=>setConvert(e.target.checked)}/> Convert WAV / AAC to MP3 in this browser (optional)</label><label>MIDI / MusicXML / additional files<input type="file" name="attachments" accept=".mid,.midi,.musicxml,.mxl,.pdf,.mp3" multiple/></label><label>Preview images<input type="file" name="preview" accept=".png,.jpg,.jpeg,.gif,.webp" multiple/></label></fieldset>{attached.length>0&&<section><h2>Attached files</h2><ol className="file-editor">{attached.map((f,i)=><li key={f.id}><a href={'/files/'+f.id} target="_blank" rel="noreferrer">{f.filename}</a> <button type="button" disabled={busy||i===0} aria-label={'Move '+f.filename+' up'} onClick={()=>void move(i,-1)}>↑</button> <button type="button" disabled={busy||i===attached.length-1} aria-label={'Move '+f.filename+' down'} onClick={()=>void move(i,1)}>↓</button> <button type="button" disabled={busy} onClick={()=>void remove(f)}>Remove</button></li>)}</ol></section>}<label><input type="checkbox" name="rights" required defaultChecked={!!item?.rights_attested}/> I have permission to share these files and this music.</label><label><input type="checkbox" name="publish" defaultChecked={item?!!item.published:true}/> Publish this song</label><div className="form-actions"><button className="primary-button" type="submit" disabled={busy}>Save this song</button>{busy&&<button type="button" onClick={()=>controller.current?.abort()}>Cancel upload</button>}{id&&<Link to={'/song/'+code}>View song page</Link>}</div>{busy&&<progress value={progress} max={100} aria-label="File upload progress"/>}<p role="status" aria-live="polite">{status}</p></form>{id&&<button className="danger-button" type="button" disabled={busy} onClick={()=>{if(confirm('Delete this song and its file references?'))void api('/api/editor',{intent:'delete',id}).then(()=>location.assign('/admin')).catch(e=>setStatus(String(e)));}}>Delete this song</button>}</>;}
+import { useRef, useState } from 'react';
+import { Link, redirect, useLoaderData, type LoaderFunctionArgs } from 'react-router';
+import { cloudflareContext } from '../lib/context.server';
+import { getViewer } from '../lib/auth.server';
+import { getTags, first, rows, type FileRecord } from '../lib/db.server';
+import { ownedArrangement } from '../lib/storage.server';
+export async function loader({ request, params, context }: LoaderFunctionArgs) {
+  const { env } = context.get(cloudflareContext);
+  const viewer = await getViewer(request, env);
+  if (!viewer) return redirect('/accounts/login');
+  let item: any = null;
+  let files: FileRecord[] = [];
+  let selected: string[] = [];
+  if (params.id) {
+    await ownedArrangement(env, viewer, params.id);
+    item = await first(env, 'SELECT * FROM arrangements WHERE id=?', [params.id]);
+    files = await rows(
+      env,
+      "SELECT * FROM files WHERE arrangement_id=? AND state='published' ORDER BY rank",
+      [params.id],
+    );
+    selected = (
+      await rows<{ tag_id: string }>(
+        env,
+        'SELECT tag_id FROM arrangement_tags WHERE arrangement_id=?',
+        [params.id],
+      )
+    ).map((t) => t.tag_id);
+  }
+  return {
+    item,
+    files,
+    selected,
+    tags: await getTags(env),
+    original: params.mode?.includes('original') ?? false,
+    viewer,
+    composers: await rows<{ id: string; name: string }>(
+      env,
+      'SELECT id,name FROM composers ORDER BY name LIMIT 500',
+    ),
+    credits: params.id
+      ? (
+          await rows<{ composer_id: string }>(
+            env,
+            'SELECT composer_id FROM credits WHERE arrangement_id=?',
+            [params.id],
+          )
+        ).map((c) => c.composer_id)
+      : [],
+  };
+}
+async function api(path: string, body: unknown, signal?: AbortSignal) {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  });
+  const value = (await response.json()) as any;
+  if (!response.ok)
+    throw new Error(value.error || 'The request could not be completed. Please retry.');
+  return value;
+}
+const types: Record<string, string> = {
+  pdf: 'application/pdf',
+  mp3: 'audio/mpeg',
+  mid: 'audio/midi',
+  midi: 'audio/midi',
+  wav: 'audio/wav',
+  aac: 'audio/aac',
+  m4a: 'audio/mp4',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  musicxml: 'application/vnd.recordare.musicxml+xml',
+  mxl: 'application/vnd.recordare.musicxml',
+};
+export default function Editor() {
+  const { item, files, selected, tags, original, viewer, composers, credits } =
+    useLoaderData<typeof loader>();
+  const [id, setId] = useState(item?.id || '');
+  const [code, setCode] = useState(item?.code || '');
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [attached, setAttached] = useState(files);
+  const [convert, setConvert] = useState(false);
+  const controller = useRef<AbortController | null>(null);
+  const completed = useRef(new Set<string>());
+  const form = useRef<HTMLFormElement>(null);
+  async function upload(file: File, kind: string, arrangementId: string, signal: AbortSignal) {
+    const key = [file.name, file.size, file.lastModified, kind].join(':');
+    if (completed.current.has(key)) return;
+    const contentType = types[file.name.toLowerCase().split('.').at(-1) || ''] || file.type;
+    const ticket = await api(
+      '/api/uploads/reserve',
+      {
+        arrangementId,
+        filename: file.name,
+        size: file.size,
+        contentType,
+        kind,
+      },
+      signal,
+    );
+    try {
+      for (let offset = 0, part = 1; offset < file.size; offset += ticket.partSize, part++) {
+        const response = await fetch('/api/uploads/part/' + ticket.id + '?part=' + part, {
+          method: 'POST',
+          body: file.slice(offset, offset + ticket.partSize),
+          signal,
+        });
+        if (!response.ok) {
+          const error = (await response.json()) as any;
+          throw new Error(error.error || 'The file transfer was interrupted.');
+        }
+        setProgress(Math.round((Math.min(file.size, offset + ticket.partSize) / file.size) * 100));
+      }
+      const saved = await api('/api/uploads/complete/' + ticket.id, {}, signal);
+      completed.current.add(key);
+      setAttached((old) => [...old, saved]);
+    } catch (error) {
+      await api('/api/uploads/cancel/' + ticket.id, {}).catch(() => undefined);
+      throw error;
+    }
+  }
+  async function save(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const abort = new AbortController();
+    controller.current = abort;
+    setBusy(true);
+    setStatus('Saving your song draft…');
+    setProgress(0);
+    try {
+      const result = await api(
+        '/api/editor',
+        {
+          id: id || undefined,
+          composerId: data.get('composerId') || undefined,
+          additionalComposerIds: data.getAll('credits'),
+          title: data.get('title'),
+          description: data.get('description'),
+          lyrics: data.get('lyrics'),
+          hymn: data.get('hymn'),
+          sourceUrl: data.get('sourceUrl'),
+          youtubeId: data.get('youtubeId'),
+          difficulty: data.get('difficulty'),
+          original: data.get('original') === 'on',
+          voicing: data.getAll('voicing').join(', '),
+          tagIds: [
+            ...data.getAll('tags'),
+            ...tags.filter((t) => data.getAll('voicing').includes(t.name)).map((t) => t.id),
+          ],
+          rights: data.get('rights') === 'on',
+        },
+        abort.signal,
+      );
+      setId(result.id);
+      setCode(result.code);
+      sessionStorage.setItem('ssm-editor-draft', result.id);
+      history.replaceState(history.state, '', '/admin/products/edit_song_easy/' + result.id);
+      for (const [name, kind] of [
+        ['score', 'score'],
+        ['scoreImages', 'score'],
+        ['recording', 'audio'],
+        ['attachments', 'attachment'],
+        ['preview', 'preview'],
+      ]) {
+        for (const value of data.getAll(name)) {
+          if (!(value instanceof File) || !value.size) continue;
+          let file = value;
+          if (convert && kind === 'audio' && /\.(wav|aac|m4a)$/i.test(file.name)) {
+            setStatus('Converting recording in your browser…');
+            const media = await import('../lib/client/media');
+            file = await media.convertRecording(file, abort.signal, setProgress);
+          }
+          setStatus('Uploading ' + file.name + '…');
+          await upload(file, kind, result.id, abort.signal);
+          if (kind === 'score' && /\.pdf$/i.test(file.name)) {
+            try {
+              setStatus('Preparing the first-page preview…');
+              const media = await import('../lib/client/media');
+              const thumbnail = await media.pdfThumbnail(file, abort.signal);
+              await upload(thumbnail, 'preview', result.id, abort.signal);
+            } catch (error) {
+              if (abort.signal.aborted) throw error;
+              setStatus('PDF saved. A preview can be regenerated by reopening the editor.');
+            }
+          }
+        }
+      }
+      await api(
+        '/api/editor',
+        {
+          intent: 'publish',
+          id: result.id,
+          publish: data.get('publish') === 'on',
+        },
+        abort.signal,
+      );
+      setStatus(data.get('publish') === 'on' ? 'Song saved and published.' : 'Song draft saved.');
+      sessionStorage.removeItem('ssm-editor-draft');
+    } catch (error) {
+      setStatus(
+        abort.signal.aborted
+          ? 'Upload cancelled. Your song draft is saved in your workspace. Choose the files and save again to retry.'
+          : (error instanceof Error ? error.message : 'Saving failed.') +
+              ' Your draft is available in your workspace.',
+      );
+    } finally {
+      setBusy(false);
+      controller.current = null;
+    }
+  }
+  async function remove(file: FileRecord) {
+    try {
+      await api('/api/editor', { intent: 'remove-file', id: file.id });
+      setAttached((old) => old.filter((f) => f.id !== file.id));
+    } catch (error) {
+      setStatus(String(error));
+    }
+  }
+  async function move(index: number, direction: number) {
+    const next = [...attached];
+    [next[index], next[index + direction]] = [next[index + direction], next[index]];
+    await api('/api/editor', {
+      intent: 'order',
+      id,
+      files: next.map((f) => f.id),
+    });
+    setAttached(next);
+  }
+  return (
+    <>
+      <p>
+        <Link to="/admin">← Composer workspace</Link>
+      </p>
+      <h1>{item ? 'Edit song' : original ? 'Add an original song' : 'Add an arrangement'}</h1>
+      <p>
+        Upload only music and files you have permission to share. Files can be up to 120 MiB; each
+        image can be up to 10 MiB.
+      </p>
+      <form ref={form} onSubmit={save} className="editor-form">
+        <label>
+          Song name
+          <input name="title" defaultValue={item?.title} required minLength={2} maxLength={180} />
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="original"
+            defaultChecked={item ? !!item.original : original}
+          />{' '}
+          This is an original song
+        </label>
+        {viewer.role === 'admin' && (
+          <label>
+            Primary composer
+            <select name="composerId" defaultValue={item?.composer_id || viewer.composerId || ''}>
+              {composers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label>
+          Additional composers (optional)
+          <select
+            multiple
+            name="credits"
+            defaultValue={credits.filter((c) => c !== item?.composer_id)}
+          >
+            {composers
+              .filter((c) => c.id !== (item?.composer_id || viewer.composerId))
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label>
+          Original hymn / song title
+          <input name="hymn" defaultValue={item?.hymn} />
+        </label>
+        <fieldset>
+          <legend>Voicing / instrumentation</legend>
+          <div className="checkbox-grid">
+            {tags
+              .filter((t) => ['voicing', 'instrument'].includes(t.type))
+              .map((t) => (
+                <label key={t.id}>
+                  <input
+                    type="checkbox"
+                    name="voicing"
+                    value={t.name}
+                    defaultChecked={item?.voicing.split(', ').includes(t.name)}
+                  />
+                  {t.name}
+                </label>
+              ))}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Topics and categories</legend>
+          <div className="checkbox-grid">
+            {tags
+              .filter((t) => !['voicing', 'instrument'].includes(t.type))
+              .map((t) => (
+                <label key={t.id}>
+                  <input
+                    type="checkbox"
+                    name="tags"
+                    value={t.id}
+                    defaultChecked={selected.includes(t.id)}
+                  />
+                  {t.name}
+                  {t.rights_warning && <small>{t.rights_warning}</small>}
+                </label>
+              ))}
+          </div>
+        </fieldset>
+        <label>
+          Difficulty
+          <select name="difficulty" defaultValue={item?.difficulty || 'Intermediate'}>
+            {['Beginning', 'Easy', 'Intermediate', 'Advanced', 'Difficult'].map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Description / song background
+          <textarea
+            name="description"
+            defaultValue={item?.description}
+            rows={5}
+            maxLength={20000}
+          />
+        </label>
+        <label>
+          Lyrics
+          <textarea name="lyrics" defaultValue={item?.lyrics} rows={5} maxLength={50000} />
+        </label>
+        <label>
+          Original song page (optional)
+          <input type="url" name="sourceUrl" defaultValue={item?.source_url} />
+        </label>
+        <label>
+          YouTube video address or ID (optional)
+          <input name="youtubeId" defaultValue={item?.youtube_id} />
+        </label>
+        <fieldset>
+          <legend>Music files</legend>
+          <label>
+            PDF sheet music
+            <input type="file" name="score" accept="application/pdf,.pdf" multiple />
+          </label>
+          <label>
+            Score images
+            <input type="file" name="scoreImages" accept=".png,.jpg,.jpeg,.gif,.webp" multiple />
+          </label>
+          <label>
+            Recording
+            <input type="file" name="recording" accept=".mp3,.wav,.aac,.m4a" multiple />
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={convert}
+              onChange={(e) => setConvert(e.target.checked)}
+            />{' '}
+            Convert WAV / AAC to MP3 in this browser (optional)
+          </label>
+          <label>
+            MIDI / MusicXML / additional files
+            <input
+              type="file"
+              name="attachments"
+              accept=".mid,.midi,.musicxml,.mxl,.pdf,.mp3"
+              multiple
+            />
+          </label>
+          <label>
+            Preview images
+            <input type="file" name="preview" accept=".png,.jpg,.jpeg,.gif,.webp" multiple />
+          </label>
+        </fieldset>
+        {attached.length > 0 && (
+          <section>
+            <h2>Attached files</h2>
+            <ol className="file-editor">
+              {attached.map((f, i) => (
+                <li key={f.id}>
+                  <a href={'/files/' + f.id} target="_blank" rel="noreferrer">
+                    {f.filename}
+                  </a>{' '}
+                  <button
+                    type="button"
+                    disabled={busy || i === 0}
+                    aria-label={'Move ' + f.filename + ' up'}
+                    onClick={() => void move(i, -1)}
+                  >
+                    ↑
+                  </button>{' '}
+                  <button
+                    type="button"
+                    disabled={busy || i === attached.length - 1}
+                    aria-label={'Move ' + f.filename + ' down'}
+                    onClick={() => void move(i, 1)}
+                  >
+                    ↓
+                  </button>{' '}
+                  <button type="button" disabled={busy} onClick={() => void remove(f)}>
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+        <label>
+          <input type="checkbox" name="rights" required defaultChecked={!!item?.rights_attested} />{' '}
+          I have permission to share these files and this music.
+        </label>
+        <label>
+          <input type="checkbox" name="publish" defaultChecked={item ? !!item.published : true} />{' '}
+          Publish this song
+        </label>
+        <div className="form-actions">
+          <button className="primary-button" type="submit" disabled={busy}>
+            Save this song
+          </button>
+          {busy && (
+            <button type="button" onClick={() => controller.current?.abort()}>
+              Cancel upload
+            </button>
+          )}
+          {id && <Link to={'/song/' + code}>View song page</Link>}
+        </div>
+        {busy && <progress value={progress} max={100} aria-label="File upload progress" />}
+        <p role="status" aria-live="polite">
+          {status}
+        </p>
+      </form>
+      {id && (
+        <button
+          className="danger-button"
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            if (confirm('Delete this song and its file references?'))
+              void api('/api/editor', { intent: 'delete', id })
+                .then(() => location.assign('/admin'))
+                .catch((e) => setStatus(String(e)));
+          }}
+        >
+          Delete this song
+        </button>
+      )}
+    </>
+  );
+}

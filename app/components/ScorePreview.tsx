@@ -1,8 +1,156 @@
-import {useEffect,useRef,useState} from 'react';
-import {ChevronLeft,ChevronRight,ZoomIn,ZoomOut,ExternalLink} from 'lucide-react';
-import type {PDFDocumentProxy} from 'pdfjs-dist';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, ExternalLink } from 'lucide-react';
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-export function ScorePreview({url,title}:{url:string;title:string}){const canvas=useRef<HTMLCanvasElement>(null);const [document,setDocument]=useState<PDFDocumentProxy|null>(null);const[page,setPage]=useState(1);const[zoom,setZoom]=useState(1);const[error,setError]=useState('');const[loading,setLoading]=useState(true);
- useEffect(()=>{let cancelled=false;let destroy:(()=>void)|undefined;void(async()=>{try{const pdf=await import('pdfjs-dist');pdf.GlobalWorkerOptions.workerSrc=pdfWorker;const task=pdf.getDocument({url});destroy=()=>{void task.destroy();};const doc=await task.promise;if(!cancelled)setDocument(doc);}catch{if(!cancelled)setError('The score preview could not load. You can still open or download the PDF.');}finally{if(!cancelled)setLoading(false);}})();return()=>{cancelled=true;destroy?.();};},[url]);
- useEffect(()=>{if(!document||!canvas.current)return;let cancelled=false;let task:{cancel():void}|undefined;void(async()=>{try{const pdfPage=await document.getPage(page);if(cancelled||!canvas.current)return;const viewport=pdfPage.getViewport({scale:1.3*zoom});const target=canvas.current;target.width=viewport.width;target.height=viewport.height;task=pdfPage.render({canvas:target,viewport});await (task as ReturnType<typeof pdfPage.render>).promise;}catch(e){if(!cancelled&&!(e instanceof Error&&e.name==='RenderingCancelledException'))setError('This page could not render. Open the PDF to view it.');}})();return()=>{cancelled=true;task?.cancel();};},[document,page,zoom]);
- return <section className="score-preview" aria-label="Sheet music preview"><div className="score-toolbar"><div className="page-controls"><button type="button" aria-label="Previous score page" disabled={page<=1} onClick={()=>setPage(page-1)}><ChevronLeft size={17}/></button><span aria-live="polite">Page {page}{document?' of '+document.numPages:''}</span><button type="button" aria-label="Next score page" disabled={!document||page>=document.numPages} onClick={()=>setPage(page+1)}><ChevronRight size={17}/></button></div><div className="zoom-controls"><button type="button" aria-label="Zoom out" disabled={zoom<=.75} onClick={()=>setZoom(Math.max(.75,zoom-.25))}><ZoomOut size={17}/></button><button type="button" aria-label="Zoom in" disabled={zoom>=2} onClick={()=>setZoom(Math.min(2,zoom+.25))}><ZoomIn size={17}/></button><a href={url} target="_blank" rel="noreferrer" aria-label="Open full PDF"><ExternalLink size={17}/></a></div></div>{loading&&<p role="status" className="preview-status">Loading sheet music…</p>}{error&&<p role="status" className="preview-status">{error}</p>}<div className="score-canvas-wrap"><canvas hidden={!document} ref={canvas} role="img" aria-label={title+', demonstration score, page '+page} style={{width:document?Math.round(100*zoom)+'%':'100%',maxWidth:'none'}}/>{!document&&<img src="/fixtures/score.svg" alt="Original demonstration notation" width="612" height="792"/>}</div><p className="score-caption">Original demonstration score · Sample content only</p></section>;}
+export function ScorePreview({
+  url,
+  title,
+  sample = false,
+}: {
+  url: string;
+  title: string;
+  sample?: boolean;
+}) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [document, setDocument] = useState<PDFDocumentProxy | null>(null);
+  const [page, setPage] = useState(1);
+  const [zoom, setZoom] = useState(1);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    let destroy: (() => void) | undefined;
+    void (async () => {
+      try {
+        const pdf = await import('pdfjs-dist');
+        pdf.GlobalWorkerOptions.workerSrc = pdfWorker;
+        const task = pdf.getDocument({ url });
+        destroy = () => {
+          void task.destroy();
+        };
+        const doc = await task.promise;
+        if (!cancelled) setDocument(doc);
+      } catch {
+        if (!cancelled)
+          setError('The score preview could not load. You can still open or download the PDF.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      destroy?.();
+    };
+  }, [url]);
+  useEffect(() => {
+    if (!document || !canvas.current) return;
+    let cancelled = false;
+    let task: { cancel(): void } | undefined;
+    void (async () => {
+      try {
+        const pdfPage = await document.getPage(page);
+        if (cancelled || !canvas.current) return;
+        const raw = pdfPage.getViewport({ scale: 1.3 * zoom });
+        const viewport = pdfPage.getViewport({
+          scale: 1.3 * zoom * Math.min(1, Math.sqrt(8000000 / (raw.width * raw.height))),
+        });
+        const target = canvas.current;
+        target.width = viewport.width;
+        target.height = viewport.height;
+        task = pdfPage.render({ canvas: target, viewport });
+        await (task as ReturnType<typeof pdfPage.render>).promise;
+      } catch (e) {
+        if (!cancelled && !(e instanceof Error && e.name === 'RenderingCancelledException'))
+          setError('This page could not render. Open the PDF to view it.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+      task?.cancel();
+    };
+  }, [document, page, zoom]);
+  return (
+    <section className="score-preview" aria-label="Sheet music preview">
+      <div className="score-toolbar">
+        <div className="page-controls">
+          <button
+            type="button"
+            aria-label="Previous score page"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            <ChevronLeft size={17} />
+          </button>
+          <span aria-live="polite">
+            Page {page}
+            {document ? ' of ' + document.numPages : ''}
+          </span>
+          <button
+            type="button"
+            aria-label="Next score page"
+            disabled={!document || page >= document.numPages}
+            onClick={() => setPage(page + 1)}
+          >
+            <ChevronRight size={17} />
+          </button>
+        </div>
+        <div className="zoom-controls">
+          <button
+            type="button"
+            aria-label="Zoom out"
+            disabled={zoom <= 0.75}
+            onClick={() => setZoom(Math.max(0.75, zoom - 0.25))}
+          >
+            <ZoomOut size={17} />
+          </button>
+          <button
+            type="button"
+            aria-label="Zoom in"
+            disabled={zoom >= 2}
+            onClick={() => setZoom(Math.min(2, zoom + 0.25))}
+          >
+            <ZoomIn size={17} />
+          </button>
+          <a href={url} target="_blank" rel="noreferrer" aria-label="Open full PDF">
+            <ExternalLink size={17} />
+          </a>
+        </div>
+      </div>
+      {loading && (
+        <p role="status" className="preview-status">
+          Loading sheet music…
+        </p>
+      )}
+      {error && (
+        <p role="status" className="preview-status">
+          {error}
+        </p>
+      )}
+      <div className="score-canvas-wrap">
+        <canvas
+          hidden={!document}
+          ref={canvas}
+          role="img"
+          aria-label={title + ', score page ' + page}
+          style={{
+            width: document ? Math.round(100 * zoom) + '%' : '100%',
+            maxWidth: 'none',
+          }}
+        />
+        {!document && (
+          <img
+            src="/fixtures/score.svg"
+            alt="Original demonstration notation"
+            width="612"
+            height="792"
+          />
+        )}
+      </div>
+      <p className="score-caption">
+        {sample
+          ? 'Original demonstration score · Sample content only'
+          : 'Sheet music preview · Open the PDF for printing'}
+      </p>
+    </section>
+  );
+}

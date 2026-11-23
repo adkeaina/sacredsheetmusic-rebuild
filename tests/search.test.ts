@@ -1,15 +1,69 @@
-import { describe,it,expect,beforeEach,afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { testDatabase } from './helpers/database';
 import { queryCatalog, reindexArrangement } from '../app/lib/search.server';
-let db:ReturnType<typeof testDatabase>;
-beforeEach(async()=>{db=testDatabase();db.sqlite.exec(`INSERT INTO composers(id,name,slug) VALUES('c','Miriam Example','miriam-example'); INSERT INTO tags(id,name,slug,type) VALUES('t','Christmas','christmas','topic'),('s','SATB','satb','voicing'),('p','Piano Solo','piano-solo','voicing');`);for(const [id,title,description,published,available] of [['a','O Morning Light','a peaceful Christmas offering',1,0],['b','Morning Light Variations','Christmas for SATB choir',1,0],['c','Hidden Light','Christmas',0,0],['d','Future Light','Christmas',1,9999999999999]]){db.sqlite.prepare('INSERT INTO arrangements(id,code,title,composer_id,description,published,available_at) VALUES(?,?,?,?,?,?,?)').run(id,String(id)+'-code',title,'c',description,published,available);await reindexArrangement(db.env,String(id));}db.sqlite.exec("INSERT INTO arrangement_tags VALUES('a','t'),('a','p'),('b','t'),('b','s')");await reindexArrangement(db.env,'a');await reindexArrangement(db.env,'b');});
-afterEach(()=>db.close());
-const search=(q:string,extra={})=>queryCatalog(db.env,{q,page:1,seed:'test',...extra});
-describe('indexed catalog search',()=>{
- it('ranks exact titles before variations and tolerates O/Oh punctuation',async()=>{expect((await search('Oh, Morning Light!')).items[0]?.id).toBe('a');});
- it('finds all words across composer and tag fields',async()=>{expect((await search('miriam christmas')).items.map(x=>x.id).sort()).toEqual(['a','b']);});
- it('combines category and instrumentation without returning hidden music',async()=>{const r=await search('light',{tag:'christmas',type:'satb'});expect(r.items.map(x=>x.id)).toEqual(['b']);expect(r.total).toBe(1);expect(r.facets.find(f=>f.slug==='satb')?.count).toBe(1);expect(r.facets.some(f=>f.slug==='piano-solo')).toBe(false);});
- it('returns useful empty and punctuation-only browse states without SQL syntax errors',async()=>{expect((await search('')).total).toBe(2);expect((await search('*** ( ) "')).total).toBe(2);expect((await search('καλημέρα')).total).toBe(0);});
- it('does not leak unavailable music through counts or suggestions',async()=>{expect((await search('hidden')).total).toBe(0);expect((await search('future')).items).toEqual([]);});
- it('reindexes updates and returns bounded successive pages',async()=>{db.sqlite.prepare('UPDATE arrangements SET title=? WHERE id=?').run('A New Dawn','a');await reindexArrangement(db.env,'a');expect((await search('morning')).items.map(x=>x.id)).toEqual(['b']);for(let i=0;i<60;i++){db.sqlite.prepare("INSERT INTO arrangements(id,code,title,composer_id) VALUES(?,?,?,'c')").run('page'+i,'page-'+i,'Paged Song '+i);await reindexArrangement(db.env,'page'+i);}const first=await search('paged');const second=await search('paged',{page:2});expect(first.items).toHaveLength(48);expect(second.items).toHaveLength(12);expect(new Set([...first.items,...second.items].map(x=>x.id)).size).toBe(60);});
+let db: ReturnType<typeof testDatabase>;
+beforeEach(async () => {
+  db = testDatabase();
+  db.sqlite.exec(
+    `INSERT INTO composers(id,name,slug) VALUES('c','Miriam Example','miriam-example'); INSERT INTO tags(id,name,slug,type) VALUES('t','Christmas','christmas','topic'),('s','SATB','satb','voicing'),('p','Piano Solo','piano-solo','voicing');`,
+  );
+  for (const [id, title, description, published, available] of [
+    ['a', 'O Morning Light', 'a peaceful Christmas offering', 1, 0],
+    ['b', 'Morning Light Variations', 'Christmas for SATB choir', 1, 0],
+    ['c', 'Hidden Light', 'Christmas', 0, 0],
+    ['d', 'Future Light', 'Christmas', 1, 9999999999999],
+  ]) {
+    db.sqlite
+      .prepare(
+        'INSERT INTO arrangements(id,code,title,composer_id,description,published,available_at) VALUES(?,?,?,?,?,?,?)',
+      )
+      .run(id, String(id) + '-code', title, 'c', description, published, available);
+    await reindexArrangement(db.env, String(id));
+  }
+  db.sqlite.exec("INSERT INTO arrangement_tags VALUES('a','t'),('a','p'),('b','t'),('b','s')");
+  await reindexArrangement(db.env, 'a');
+  await reindexArrangement(db.env, 'b');
+});
+afterEach(() => db.close());
+const search = (q: string, extra = {}) =>
+  queryCatalog(db.env, { q, page: 1, seed: 'test', ...extra });
+describe('indexed catalog search', () => {
+  it('ranks exact titles before variations and tolerates O/Oh punctuation', async () => {
+    expect((await search('Oh, Morning Light!')).items[0]?.id).toBe('a');
+  });
+  it('finds all words across composer and tag fields', async () => {
+    expect((await search('miriam christmas')).items.map((x) => x.id).sort()).toEqual(['a', 'b']);
+  });
+  it('combines category and instrumentation without returning hidden music', async () => {
+    const r = await search('light', { tag: 'christmas', type: 'satb' });
+    expect(r.items.map((x) => x.id)).toEqual(['b']);
+    expect(r.total).toBe(1);
+    expect(r.facets.find((f) => f.slug === 'satb')?.count).toBe(1);
+    expect(r.facets.some((f) => f.slug === 'piano-solo')).toBe(false);
+  });
+  it('returns useful empty and punctuation-only browse states without SQL syntax errors', async () => {
+    expect((await search('')).total).toBe(2);
+    expect((await search('*** ( ) "')).total).toBe(2);
+    expect((await search('καλημέρα')).total).toBe(0);
+  });
+  it('does not leak unavailable music through counts or suggestions', async () => {
+    expect((await search('hidden')).total).toBe(0);
+    expect((await search('future')).items).toEqual([]);
+  });
+  it('reindexes updates and returns bounded successive pages', async () => {
+    db.sqlite.prepare('UPDATE arrangements SET title=? WHERE id=?').run('A New Dawn', 'a');
+    await reindexArrangement(db.env, 'a');
+    expect((await search('morning')).items.map((x) => x.id)).toEqual(['b']);
+    for (let i = 0; i < 60; i++) {
+      db.sqlite
+        .prepare("INSERT INTO arrangements(id,code,title,composer_id) VALUES(?,?,?,'c')")
+        .run('page' + i, 'page-' + i, 'Paged Song ' + i);
+      await reindexArrangement(db.env, 'page' + i);
+    }
+    const first = await search('paged');
+    const second = await search('paged', { page: 2 });
+    expect(first.items).toHaveLength(48);
+    expect(second.items).toHaveLength(12);
+    expect(new Set([...first.items, ...second.items].map((x) => x.id)).size).toBe(60);
+  });
 });

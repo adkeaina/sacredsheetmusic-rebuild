@@ -1,2 +1,72 @@
-import {index,route,type RouteConfig} from '@react-router/dev/routes';
-export default [index('routes/home.tsx'),route('search','routes/catalog.tsx',{id:'search'}),route('music/most_recently_added','routes/catalog.tsx',{id:'recent'}),route('song/:code','routes/song.tsx'),route('s/:code','routes/song.tsx',{id:'song-alias'}),route('music/wishlist','routes/bookmarks.tsx'),route('composers','routes/composer.tsx',{id:'composers'}),route('composer/:slug','routes/composer.tsx'),route('files/:id','routes/files.ts'),route('about/:slug','routes/content.tsx'),route('questions/ask','routes/content.tsx',{id:'contact'}),route('questions/faq','routes/content.tsx',{id:'faq'}),route('music/comment/:id','routes/comment.tsx'),route('music/add_comment/:id','routes/comment.tsx',{id:'comment-alias'}),route('competition','routes/competition.tsx'),route('competition/results','routes/competition.tsx',{id:'results'}),route('music/competition','routes/competition.tsx',{id:'competition-alias'}),route('music/competition_results','routes/competition.tsx',{id:'results-alias'}),route('music/composer_all_song_stats/:id','routes/statistics.tsx'),route('music/redirect_to_original_url/:code','routes/statistics.tsx',{id:'referral'}),route('accounts/:mode','routes/accounts.tsx'),route('api/auth/*','routes/api-auth.ts'),route('admin','routes/workspace.tsx'),route('admin/products/:mode/:id?','routes/editor.tsx'),route('api/editor','routes/api-editor.ts'),route('api/uploads/:op/:id?','routes/api-uploads.ts'),route('processing/:name','routes/processing.ts'),route('admin/outbox','routes/outbox.tsx'),route('api/search','routes/api-search.ts'),route('*','routes/catalog.tsx',{id:'category'})] satisfies RouteConfig;
+import { index, route, type RouteConfig } from '@react-router/dev/routes';
+export default [
+  index('routes/home.tsx'),
+  route('search', 'routes/catalog.tsx', { id: 'search' }),
+  route('music/most_recently_added', 'routes/catalog.tsx', { id: 'recent' }),
+  route('song/:code', 'routes/song.tsx'),
+  route('s/:code', 'routes/song.tsx', { id: 'song-alias' }),
+  route('music/wishlist', 'routes/bookmarks.tsx'),
+  route('composers', 'routes/composer.tsx', { id: 'composers' }),
+  route('composer/:slug', 'routes/composer.tsx'),
+  route('files/:id', 'routes/files.ts'),
+  route('about/:slug', 'routes/content.tsx'),
+  route('questions/ask', 'routes/content.tsx', { id: 'contact' }),
+  route('questions/faq', 'routes/content.tsx', { id: 'faq' }),
+  route('music/comment/:id', 'routes/comment.tsx'),
+  route('music/add_comment/:id', 'routes/comment.tsx', { id: 'comment-alias' }),
+  route('competition', 'routes/competition.tsx'),
+  route('competition/results', 'routes/competition.tsx', { id: 'results' }),
+  route('music/competition', 'routes/competition.tsx', {
+    id: 'competition-alias',
+  }),
+  route('music/competition_results', 'routes/competition.tsx', {
+    id: 'results-alias',
+  }),
+  route('music/composer_all_song_stats/:id', 'routes/statistics.tsx'),
+  route('music/redirect_to_original_url/:code', 'routes/statistics.tsx', {
+    id: 'referral',
+  }),
+  route('accounts/:mode', 'routes/accounts.tsx'),
+  route('api/auth/*', 'routes/api-auth.ts'),
+  route('admin', 'routes/workspace.tsx'),
+  route('api/admin/bootstrap', 'routes/bootstrap.ts'),
+  route('api/admin-media', 'routes/admin-media.ts'),
+  route('admin/:area', 'routes/admin.tsx'),
+  route('admin/products/list', 'routes/admin.tsx', { id: 'admin-alias-0' }),
+  route('admin/products/index', 'routes/admin.tsx', { id: 'admin-alias-1' }),
+  route('admin/products/with_problems', 'routes/admin.tsx', {
+    id: 'admin-alias-2',
+  }),
+  route('admin/tags/list', 'routes/admin.tsx', { id: 'admin-alias-3' }),
+  route('admin/users/list', 'routes/admin.tsx', { id: 'admin-alias-4' }),
+  route('admin/content_nodes/list', 'routes/admin.tsx', {
+    id: 'admin-alias-5',
+  }),
+  route('admin/preferences/list', 'routes/admin.tsx', { id: 'admin-alias-6' }),
+  route('admin/products/spam_all_composers_pre', 'routes/admin.tsx', {
+    id: 'admin-alias-7',
+  }),
+  route('admin/products/single_composer_stats', 'routes/admin.tsx', {
+    id: 'admin-alias-8',
+  }),
+  route('admin/products/:mode/:id?', 'routes/editor.tsx'),
+  route('api/editor', 'routes/api-editor.ts'),
+  route('api/uploads/:op/:id?', 'routes/api-uploads.ts'),
+  route('processing/:name', 'routes/processing.ts'),
+  route('admin/outbox', 'routes/outbox.tsx'),
+  route('youtube_edl/control_youtube', 'routes/player.tsx', {
+    id: 'youtube-source-alias',
+  }),
+  route('music/show_by_tags/:tag', 'routes/catalog.tsx', { id: 'tags-alias' }),
+  route('music/download_file/:id', 'routes/files.ts', { id: 'download-alias' }),
+  route('music/inline_download_file/:id', 'routes/files.ts', {
+    id: 'inline-alias',
+  }),
+  route('music/search', 'routes/catalog.tsx', { id: 'search-alias' }),
+  route('youtube_skips', 'routes/player.tsx'),
+  route('youtube_skips/index', 'routes/player.tsx', { id: 'player-alias' }),
+  route('music/show/:code', 'routes/song.tsx', { id: 'show-alias' }),
+  route('music/index', 'routes/catalog.tsx', { id: 'index-alias' }),
+  route('api/search', 'routes/api-search.ts'),
+  route('*', 'routes/catalog.tsx', { id: 'category' }),
+] satisfies RouteConfig;

@@ -1,9 +1,97 @@
-import {data,Form,Link,redirect,useLoaderData,type LoaderFunctionArgs,type ActionFunctionArgs} from 'react-router';
-import {cloudflareContext} from '../lib/context.server';
-import {rows,first,run,summarySelect,visible} from '../lib/db.server';
-import type {ArrangementSummary} from '../lib/types.server';
-import {visitorSession,requireSameOrigin} from '../lib/visitor.server';
-import {MusicList} from '../components/MusicList';
-export async function loader({request,context}:LoaderFunctionArgs){const{env}=context.get(cloudflareContext);const visitor=await visitorSession(request,env);const items=await rows<ArrangementSummary>(env,`SELECT ${summarySelect} FROM arrangements a JOIN composers c ON c.id=a.composer_id JOIN bookmarks b ON b.arrangement_id=a.id WHERE b.session_id=? AND ${visible} ORDER BY b.created_at DESC`,[visitor.id,Date.now()]);return data({items},{headers:{'Cache-Control':'private, no-store',...(visitor.header?{'Set-Cookie':visitor.header}:{})}});}
-export async function action({request,context}:ActionFunctionArgs){requireSameOrigin(request);const{env}=context.get(cloudflareContext);const visitor=await visitorSession(request,env);const form=await request.formData();const id=String(form.get('id')||'');if(form.get('intent')==='remove')await run(env,'DELETE FROM bookmarks WHERE session_id=? AND arrangement_id=?',[visitor.id,id]);else{const a=await first(env,`SELECT id FROM arrangements a WHERE a.id=? AND ${visible}`,[id,Date.now()]);if(!a)throw new Response('Arrangement not found',{status:404});await run(env,'INSERT OR IGNORE INTO bookmarks(session_id,arrangement_id) VALUES(?,?)',[visitor.id,id]);}return redirect('/music/wishlist',{headers:visitor.header?{'Set-Cookie':visitor.header}:{}});}
-export default function Bookmarks(){const{items}=useLoaderData<typeof loader>();return <><div className="breadcrumbs"><Link to="/">Home</Link><span>›</span><span>Bookmarks</span></div><h1>Your Bookmarked Songs</h1><p>This list is saved for this browser. A composer login is not required.</p>{items.length?<><MusicList items={items}/><h2>Manage your saved list</h2><ul className="bookmark-management">{items.map(a=><li key={a.id}><Link to={'/song/'+a.code}>{a.title} · {a.voicing}</Link><Form method="post"><input type="hidden" name="id" value={a.id}/><input type="hidden" name="intent" value="remove"/><button type="submit">Remove</button></Form></li>)}</ul></>:<div className="empty-state"><p>You have no bookmarked songs yet.</p><Link to="/all">Browse all songs →</Link></div>}</>;}
+import {
+  data,
+  Form,
+  Link,
+  redirect,
+  useLoaderData,
+  type LoaderFunctionArgs,
+  type ActionFunctionArgs,
+} from 'react-router';
+import { cloudflareContext } from '../lib/context.server';
+import { rows, first, run, summarySelect, visible } from '../lib/db.server';
+import type { ArrangementSummary } from '../lib/types.server';
+import { visitorSession, requireSameOrigin } from '../lib/visitor.server';
+import { MusicList } from '../components/MusicList';
+export async function loader({ request, context }: LoaderFunctionArgs) {
+  const { env } = context.get(cloudflareContext);
+  const visitor = await visitorSession(request, env);
+  const items = await rows<ArrangementSummary>(
+    env,
+    `SELECT ${summarySelect} FROM arrangements a JOIN composers c ON c.id=a.composer_id JOIN bookmarks b ON b.arrangement_id=a.id WHERE b.session_id=? AND ${visible} ORDER BY b.created_at DESC`,
+    [visitor.id, Date.now()],
+  );
+  return data(
+    { items },
+    {
+      headers: {
+        'Cache-Control': 'private, no-store',
+        ...(visitor.header ? { 'Set-Cookie': visitor.header } : {}),
+      },
+    },
+  );
+}
+export async function action({ request, context }: ActionFunctionArgs) {
+  requireSameOrigin(request);
+  const { env } = context.get(cloudflareContext);
+  const visitor = await visitorSession(request, env);
+  const form = await request.formData();
+  const id = String(form.get('id') || '');
+  if (form.get('intent') === 'remove')
+    await run(env, 'DELETE FROM bookmarks WHERE session_id=? AND arrangement_id=?', [
+      visitor.id,
+      id,
+    ]);
+  else {
+    const a = await first(env, `SELECT id FROM arrangements a WHERE a.id=? AND ${visible}`, [
+      id,
+      Date.now(),
+    ]);
+    if (!a) throw new Response('Arrangement not found', { status: 404 });
+    await run(env, 'INSERT OR IGNORE INTO bookmarks(session_id,arrangement_id) VALUES(?,?)', [
+      visitor.id,
+      id,
+    ]);
+  }
+  return redirect('/music/wishlist', {
+    headers: visitor.header ? { 'Set-Cookie': visitor.header } : {},
+  });
+}
+export default function Bookmarks() {
+  const { items } = useLoaderData<typeof loader>();
+  return (
+    <>
+      <div className="breadcrumbs">
+        <Link to="/">Home</Link>
+        <span>›</span>
+        <span>Bookmarks</span>
+      </div>
+      <h1>Your Bookmarked Songs</h1>
+      <p>This list is saved for this browser. A composer login is not required.</p>
+      {items.length ? (
+        <>
+          <MusicList items={items} />
+          <h2>Manage your saved list</h2>
+          <ul className="bookmark-management">
+            {items.map((a) => (
+              <li key={a.id}>
+                <Link to={'/song/' + a.code}>
+                  {a.title} · {a.voicing}
+                </Link>
+                <Form method="post">
+                  <input type="hidden" name="id" value={a.id} />
+                  <input type="hidden" name="intent" value="remove" />
+                  <button type="submit">Remove</button>
+                </Form>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <div className="empty-state">
+          <p>You have no bookmarked songs yet.</p>
+          <Link to="/all">Browse all songs →</Link>
+        </div>
+      )}
+    </>
+  );
+}

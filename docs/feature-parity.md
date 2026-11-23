@@ -1,18 +1,28 @@
-# Feature parity register
+# Feature register
 
-The approved design is authoritative. `source-actions.json` lists application controller methods at upstream commit aee05fb18aef1b603de2006beeb11a75704481f4; helper methods are not automatically public requirements. Inherited music administration is also covered below. Live-site visual parity remains unverified because access was blocked.
+The approved design is authoritative. The public Rails repository was inspected at aee05fb18aef1b603de2006beeb11a75704481f4, including inherited Substruct routes. The original site could not be rendered in the research environment, so visual or production-data parity is not asserted. This is an independent implementation with fictional metadata and owned demonstration files.
 
-| Area | Replacement | Status | Verification |
-|---|---|---|---|
-| Runtime and persistent data | Workers / D1 / R2 | Foundation implemented | Build, typecheck, data integrity tests; local health/readiness |
-| Browse, categories, composers | Familiar source-shaped navigation | Planned | Discovery browser flows |
-| Live search and sticky filters | Indexed FTS5 / URL state | Planned | Search tests and browser flows |
-| Song previews and files | Ordered score/audio/downloads | Planned | Owned fixture/browser flows |
-| Bookmarks | Anonymous persistent list | Planned | Two-session browser test |
-| Accounts and composer editing | Ownership-limited persistent tools | Planned | Permission/account/editor tests |
-| Comments and competitions | Persisted feedback and closing rules | Planned | Fixed-clock and browser tests |
-| Administration and content | Private catalog, taxonomy, accounts, content and diagnostics | Planned | Admin flows |
-| Mail and announcements | Private captured outbox | Approved preview difference | No live recipients; reset test through private inbox |
-| Original catalog/media and identities | Fictional data and owned fixtures | Approved preview difference | Provenance manifest |
-| Bundled commerce | No store/checkout | Inactive legacy per approved design | Public cart links disabled; paid songs rejected in upstream view |
-| Third-party trackers and original sponsor identities | Omitted from independent preview | Approved preview difference | Static inspection |
+| Area | Replacement | Evidence / limits |
+|---|---|---|
+| Runtime | React Router SSR, Workers, D1, private R2; HTTPS on deployment | Typecheck/build; isolated runtime and persistence tests |
+| Browse and navigation | Source-shaped header, sidebar, category hierarchy, original/recent lists, composers, pagination | Discovery browser tests; mobile category disclosure |
+| Search | FTS5, 300 ms live updates, IME handling, title/composer/topic matching, URL filters, scoped facets, sticky type, back navigation | Search unit and discovery browser tests; 10,000-row isolated benchmark |
+| Song pages | Background, lyrics, credits/notices, related music, lazy PDF pages/zoom, ordered score images, native audio, MIDI/notation downloads, YouTube, original-page links | PDF/audio browser checks, range response checks; MIDI offered as a compatible file download |
+| Bookmarks | Signed anonymous browser session, persistent list, session-limited removal | Two-session isolation test |
+| Accounts | Composer registration/login/logout, profile and password changes, one-time recovery, email-change confirmations, authoritative role checks | Account and ownership tests; messages remain captured |
+| Composer editor | Originals/arrangements, voicing/topics, rights attestation, additional credits, drafts/publication, edit/delete, ordered file references, aliases after code changes | Editor browser publish/edit/delete, multipart privacy/retry, WAV-to-MP3 browser conversion |
+| File pipeline | 120 MiB file / 10 MiB image caps, signatures, reserved quota, 8 MiB streamed parts, idempotent completion, abort/expiry, shared-reference collection | Boundary/signature/quota tests and actual multipart browser transfer; large-file acceptance is validated without claiming every possible file parses |
+| Comments | Public constructive text/rating/difficulty; private email and captured notification; retry deduplication and abuse checks | Community unit/browser tests |
+| Competitions | Date windows, randomized entry order, reviewed state, account/session/household uniqueness, private feedback, frozen final points, peer averages and 4.0 threshold | Fixed-clock 80/81-character and deadline tests; browser submission/privacy/results |
+| Statistics | Views, logical downloads, original-page visits, composer reports; no repeated range-request inflation | Counter tests, composer browser report; statistics messages captured through admin Messages |
+| Administration | Catalog availability/winner flags, duplicate/new-same-author, category CRUD/order/alphabetize, composer metadata, user roles, pages/FAQ sections, preferences, files, contacts, competitions/entries, audit log | Administrator browser workflows and direct composer-denial tests; previews can be regenerated in the browser |
+| Maintenance | Missing metadata/files and duplicate-title checks, bounded index rebuild, expired upload/deleted object collection, guarded remote PDF/audio import with provenance | Maintenance/shared-reference tests; remote imports require public HTTPS, DNS/redirect checks, length/time caps and permission |
+| Communications | Registration, recovery, comments, contest feedback, contact, statistics and announcement composition | Private captured outbox only. No live mail delivery, bulk provider, or consent migration |
+| Supporting content | About, upload/self-upload, resources, FAQ/contact, privacy, competition instructions; safe plain-text content editing | Public navigation and admin page persistence checks |
+| Auxiliary player | YouTube skip/mute interval utility; seconds or timestamps and old repeated start/end query inputs | Bounded parser tests; external YouTube availability is outside the app's control |
+| Compatibility | Explicit known public aliases, source category names/underscores, song aliases and useful admin list routes | No generic controller dispatch. Unknown original IDs cannot resolve without an authorized catalog import |
+| Original data and identities | Sample data only | Approved preview difference; provenance manifest |
+| Inherited commerce | No store/cart/checkout | Inactive in inspected music views; excluded in approved design |
+| Original trackers/sponsors | Omitted | Approved preview difference |
+
+Administrator forms expose clear field names; times currently use Unix milliseconds. Large taxonomy restructures and imports should be followed by the bounded full-index rebuild. The original database, music permissions and full file inventory are still required for a real migration. Administrative account linking/removal should be reviewed with the maintainer's real identity model before importing users; preview registration never claims existing composer names automatically.

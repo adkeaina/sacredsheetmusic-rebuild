@@ -1,17 +1,110 @@
-import{localRuntime}from'../../scripts/local-runtime';
-import{test,expect}from'@playwright/test';
-const suffix=Date.now().toString(36);const username='composer'+suffix;const email=username+'@example.invalid';const password='SampleMusic!2026';
-test('composer registration, own profile and username login persist',async({page})=>{await page.goto('/accounts/new_composer_login');await page.getByLabel('Desired login').fill(username);await page.getByLabel('Composer name',{exact:true}).fill('Test Composer '+suffix);await page.getByLabel('Your email address',{exact:true}).fill(email);await page.getByLabel('Password',{exact:true}).fill(password);await page.getByLabel('Confirm password',{exact:true}).fill(password);await page.getByRole('button',{name:'Create composer login'}).click();await expect(page.getByRole('heading',{name:'Composer workspace'})).toBeVisible();await page.getByRole('link',{name:'Edit my profile'}).click();await page.getByLabel('Composer bio / background').fill('An original profile saved by the end-to-end test.');await page.getByRole('button',{name:'Save profile'}).click();await expect(page.getByText('Profile saved.')).toBeVisible();await page.getByRole('button',{name:'Log out'}).click();await expect(page.getByRole('heading',{name:'Free Sacred Sheet Music',exact:true})).toBeVisible();await page.goto('/accounts/login');await page.getByLabel('Username').fill(username);await page.getByLabel('Password',{exact:true}).fill(password);await page.getByRole('button',{name:'Log in',exact:true}).click();await expect(page.getByRole('heading',{name:'Composer workspace'})).toBeVisible();});
-test('an existing composer name cannot be claimed and reset mail stays private',async({page})=>{await page.goto('/accounts/new_composer_login');await page.getByLabel('Desired login').fill('claim'+suffix);await page.getByLabel('Composer name',{exact:true}).fill('Miriam Example');await page.getByLabel('Your email address',{exact:true}).fill('claim'+suffix+'@example.invalid');await page.getByLabel('Password',{exact:true}).fill(password);await page.getByLabel('Confirm password',{exact:true}).fill(password);await page.getByRole('button',{name:'Create composer login'}).click();await expect(page.getByRole('alert')).toContainText('already exists');await page.goto('/accounts/reset_password');await page.getByLabel('Your email address',{exact:true}).fill(email);await page.getByRole('button',{name:'Request password reset'}).click();await expect(page.getByRole('status')).toContainText('captured');const response=await page.request.get('/admin/outbox');expect([302,401,403]).toContain(response.status());});
+import { localRuntime } from '../../scripts/local-runtime';
+import { test, expect } from '@playwright/test';
+const suffix = Date.now().toString(36);
+const username = 'composer' + suffix;
+const email = username + '@example.invalid';
+const password = 'SampleMusic!2026';
+test('composer registration, own profile and username login persist', async ({ page }) => {
+  await page.goto('/accounts/new_composer_login');
+  await page.getByLabel('Desired login').fill(username);
+  await page.getByLabel('Composer name', { exact: true }).fill('Test Composer ' + suffix);
+  await page.getByLabel('Your email address', { exact: true }).fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByLabel('Confirm password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Create composer login' }).click();
+  await expect(page.getByRole('heading', { name: 'Composer workspace' })).toBeVisible();
+  await page.getByRole('link', { name: 'Edit my profile' }).click();
+  await page
+    .getByLabel('Composer bio / background')
+    .fill('An original profile saved by the end-to-end test.');
+  await page.getByRole('button', { name: 'Save profile' }).click();
+  await expect(page.getByText('Profile saved.')).toBeVisible();
+  await page.getByRole('button', { name: 'Log out' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Free Sacred Sheet Music', exact: true }),
+  ).toBeVisible();
+  await page.goto('/accounts/login');
+  await page.getByLabel('Username').fill(username);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Log in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Composer workspace' })).toBeVisible();
+});
+test('an existing composer name cannot be claimed and reset mail stays private', async ({
+  page,
+}) => {
+  await page.goto('/accounts/new_composer_login');
+  await page.getByLabel('Desired login').fill('claim' + suffix);
+  await page.getByLabel('Composer name', { exact: true }).fill('Miriam Example');
+  await page
+    .getByLabel('Your email address', { exact: true })
+    .fill('claim' + suffix + '@example.invalid');
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByLabel('Confirm password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Create composer login' }).click();
+  await expect(page.getByRole('alert')).toContainText('already exists');
+  await page.goto('/accounts/reset_password');
+  await page.getByLabel('Your email address', { exact: true }).fill(email);
+  await page.getByRole('button', { name: 'Request password reset' }).click();
+  await expect(page.getByRole('status')).toContainText('captured');
+  const response = await page.request.get('/admin/outbox');
+  expect([302, 401, 403]).toContain(response.status());
+});
 
-test('one-time password recovery changes the credential and rejects token reuse',async({page,baseURL})=>{
- const key='recovery'+Date.now().toString(36);const target=key+'@example.invalid';
- const signup=await page.request.post('/api/auth/sign-up/email',{headers:{Origin:baseURL!},data:{username:key,name:'Recovery '+key,email:target,password,role:'admin'}});expect(signup.ok()).toBe(true);
- const forbidden=await page.request.get('/admin/outbox');expect(forbidden.status()).toBe(403);
- await page.request.post('/api/auth/sign-out',{headers:{Origin:baseURL!},data:{}});
- await page.goto('/accounts/reset_password');await page.getByLabel('Your email address',{exact:true}).fill(target);await page.getByRole('button',{name:'Request password reset'}).click();await expect(page.getByRole('status')).toContainText('captured');
- const {mf,db}=await localRuntime();let resetUrl='';try{const mail=await db.prepare("SELECT body FROM mail_outbox WHERE recipient=? AND kind='password-reset' ORDER BY created_at DESC LIMIT 1").bind(target).first<{body:string}>();resetUrl=mail?.body.match(/https?:\/\/\S+/)?.[0]||'';}finally{await mf.dispose();}expect(resetUrl).toContain('/api/auth/reset-password/');
- await page.goto(resetUrl);await page.getByLabel('Password',{exact:true}).fill('NewSampleMusic!2026');await page.getByLabel('Confirm password',{exact:true}).fill('NewSampleMusic!2026');const resetPage=page.url();await page.getByRole('button',{name:'Set new password'}).click();await expect(page.getByRole('status')).toContainText('Password reset.');
- await page.goto(resetPage);await page.getByLabel('Password',{exact:true}).fill('AnotherPassword!2026');await page.getByLabel('Confirm password',{exact:true}).fill('AnotherPassword!2026');await page.getByRole('button',{name:'Set new password'}).click();await expect(page.getByRole('alert')).toBeVisible();
- await page.goto('/accounts/login');await page.getByLabel('Username').fill(key);await page.getByLabel('Password',{exact:true}).fill('NewSampleMusic!2026');await page.getByRole('button',{name:'Log in',exact:true}).click();await expect(page.getByRole('heading',{name:'Composer workspace'})).toBeVisible();
+test('one-time password recovery changes the credential and rejects token reuse', async ({
+  page,
+  baseURL,
+}) => {
+  const key = 'recovery' + Date.now().toString(36);
+  const target = key + '@example.invalid';
+  const signup = await page.request.post('/api/auth/sign-up/email', {
+    headers: { Origin: baseURL! },
+    data: {
+      username: key,
+      name: 'Recovery ' + key,
+      email: target,
+      password,
+      role: 'admin',
+    },
+  });
+  expect(signup.ok()).toBe(true);
+  const forbidden = await page.request.get('/admin/outbox');
+  expect(forbidden.status()).toBe(403);
+  await page.request.post('/api/auth/sign-out', {
+    headers: { Origin: baseURL! },
+    data: {},
+  });
+  await page.goto('/accounts/reset_password');
+  await page.getByLabel('Your email address', { exact: true }).fill(target);
+  await page.getByRole('button', { name: 'Request password reset' }).click();
+  await expect(page.getByRole('status')).toContainText('captured');
+  const { mf, db } = await localRuntime();
+  let resetUrl = '';
+  try {
+    const mail = await db
+      .prepare(
+        "SELECT body FROM mail_outbox WHERE recipient=? AND kind='password-reset' ORDER BY created_at DESC LIMIT 1",
+      )
+      .bind(target)
+      .first<{ body: string }>();
+    resetUrl = mail?.body.match(/https?:\/\/\S+/)?.[0] || '';
+  } finally {
+    await mf.dispose();
+  }
+  expect(resetUrl).toContain('/api/auth/reset-password/');
+  await page.goto(resetUrl);
+  await page.getByLabel('Password', { exact: true }).fill('NewSampleMusic!2026');
+  await page.getByLabel('Confirm password', { exact: true }).fill('NewSampleMusic!2026');
+  const resetPage = page.url();
+  await page.getByRole('button', { name: 'Set new password' }).click();
+  await expect(page.getByRole('status')).toContainText('Password reset.');
+  await page.goto(resetPage);
+  await page.getByLabel('Password', { exact: true }).fill('AnotherPassword!2026');
+  await page.getByLabel('Confirm password', { exact: true }).fill('AnotherPassword!2026');
+  await page.getByRole('button', { name: 'Set new password' }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await page.goto('/accounts/login');
+  await page.getByLabel('Username').fill(key);
+  await page.getByLabel('Password', { exact: true }).fill('NewSampleMusic!2026');
+  await page.getByRole('button', { name: 'Log in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Composer workspace' })).toBeVisible();
 });

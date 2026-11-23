@@ -1,5 +1,88 @@
-import{it,expect}from'vitest';import{testDatabase}from'./helpers/database';import{addVote,competitionResults,addComment,recordEvent}from'../app/lib/community.server';
-function setup(){const d=testDatabase();d.sqlite.exec("INSERT INTO composers(id,name,slug,private_email) VALUES('c','Composer','c','c@example.invalid');INSERT INTO arrangements(id,code,title,composer_id) VALUES('a','a','A','c');INSERT INTO competitions(id,title,opens_at,closes_at) VALUES('contest','Contest',100,200);INSERT INTO competition_entries(competition_id,arrangement_id) VALUES('contest','a');");return d;}
-it('enforces contest dates, duplicate households, private feedback and source scoring',async()=>{const d=setup();try{const vote={competitionId:'contest',arrangementId:'a',household:'h1',session:'s1',userId:null,rating:5,feedback:'a'.repeat(80)};await expect(addVote(d.env,vote,99)).rejects.toThrow('opened');await addVote(d.env,vote,100);await expect(addVote(d.env,{...vote,session:'other'},101)).rejects.toThrow('already');await addVote(d.env,{...vote,household:'h2',session:'s2',rating:3,feedback:'b'.repeat(81)},199);await addVote(d.env,{...vote,household:'h3',session:'s3',rating:5,feedback:'post-close'},200);const result=await competitionResults(d.env,'contest');expect(result[0]).toMatchObject({points:8,peer_average:3,peer_count:1});expect(d.sqlite.prepare('SELECT count(*) n FROM comments').get()?.n).toBe(0);expect(d.sqlite.prepare('SELECT count(*) n FROM mail_outbox').get()?.n).toBe(3);}finally{d.close();}});
-it('makes public comment retries idempotent and keeps email private',async()=>{const d=setup();try{const input={arrangementId:'a',name:'Listener',email:'private@example.invalid',text:'Thank you for this music!',rating:4,difficulty:3};await addComment(d.env,input);await addComment(d.env,input);expect(d.sqlite.prepare('SELECT count(*) n FROM comments').get()?.n).toBe(1);}finally{d.close();}});
-it('does not inflate counters for repeated logical downloads',async()=>{const d=setup();try{await recordEvent(d.env,'a','download','visitor',10);await recordEvent(d.env,'a','download','visitor',20);await recordEvent(d.env,'a','download','other',30);expect(d.sqlite.prepare("SELECT count FROM stats WHERE kind='download'").get()?.count).toBe(2);}finally{d.close();}});
+import { it, expect } from 'vitest';
+import { testDatabase } from './helpers/database';
+import { addVote, competitionResults, addComment, recordEvent } from '../app/lib/community.server';
+function setup() {
+  const d = testDatabase();
+  d.sqlite.exec(
+    "INSERT INTO composers(id,name,slug,private_email) VALUES('c','Composer','c','c@example.invalid');INSERT INTO arrangements(id,code,title,composer_id) VALUES('a','a','A','c');INSERT INTO competitions(id,title,opens_at,closes_at) VALUES('contest','Contest',100,200);INSERT INTO competition_entries(competition_id,arrangement_id) VALUES('contest','a');",
+  );
+  return d;
+}
+it('enforces contest dates, duplicate households, private feedback and source scoring', async () => {
+  const d = setup();
+  try {
+    const vote = {
+      competitionId: 'contest',
+      arrangementId: 'a',
+      household: 'h1',
+      session: 's1',
+      userId: null,
+      rating: 5,
+      feedback: 'a'.repeat(80),
+    };
+    await expect(addVote(d.env, vote, 99)).rejects.toThrow('opened');
+    await addVote(d.env, vote, 100);
+    await expect(addVote(d.env, { ...vote, session: 'other' }, 101)).rejects.toThrow('already');
+    await addVote(
+      d.env,
+      {
+        ...vote,
+        household: 'h2',
+        session: 's2',
+        rating: 3,
+        feedback: 'b'.repeat(81),
+      },
+      199,
+    );
+    await addVote(
+      d.env,
+      {
+        ...vote,
+        household: 'h3',
+        session: 's3',
+        rating: 5,
+        feedback: 'post-close',
+      },
+      200,
+    );
+    const result = await competitionResults(d.env, 'contest');
+    expect(result[0]).toMatchObject({
+      points: 8,
+      peer_average: 3,
+      peer_count: 1,
+    });
+    expect(d.sqlite.prepare('SELECT count(*) n FROM comments').get()?.n).toBe(0);
+    expect(d.sqlite.prepare('SELECT count(*) n FROM mail_outbox').get()?.n).toBe(3);
+  } finally {
+    d.close();
+  }
+});
+it('makes public comment retries idempotent and keeps email private', async () => {
+  const d = setup();
+  try {
+    const input = {
+      arrangementId: 'a',
+      name: 'Listener',
+      email: 'private@example.invalid',
+      text: 'Thank you for this music!',
+      rating: 4,
+      difficulty: 3,
+    };
+    await addComment(d.env, input);
+    await addComment(d.env, input);
+    expect(d.sqlite.prepare('SELECT count(*) n FROM comments').get()?.n).toBe(1);
+  } finally {
+    d.close();
+  }
+});
+it('does not inflate counters for repeated logical downloads', async () => {
+  const d = setup();
+  try {
+    await recordEvent(d.env, 'a', 'download', 'visitor', 10);
+    await recordEvent(d.env, 'a', 'download', 'visitor', 20);
+    await recordEvent(d.env, 'a', 'download', 'other', 30);
+    expect(d.sqlite.prepare("SELECT count FROM stats WHERE kind='download'").get()?.count).toBe(2);
+  } finally {
+    d.close();
+  }
+});

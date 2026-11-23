@@ -1,6 +1,55 @@
-import type {ActionFunctionArgs} from 'react-router';
-import {cloudflareContext} from '../lib/context.server';
-import {requireViewer} from '../lib/auth.server';
-import {requireSameOrigin,consumeRateLimit} from '../lib/security.server';
-import {saveArrangement,publishArrangement,deleteArrangement,removeFile,ownedArrangement} from '../lib/storage.server';
-export async function action({request,context}:ActionFunctionArgs){const{env}=context.get(cloudflareContext);requireSameOrigin(request);const viewer=await requireViewer(request,env);await consumeRateLimit(env,'editor:'+viewer.userId,100);try{const body=await request.json() as Record<string,any>;if(body.intent==='delete'){await deleteArrangement(env,viewer,String(body.id));return Response.json({ok:true});}if(body.intent==='remove-file'){await removeFile(env,viewer,String(body.id));return Response.json({ok:true});}if(body.intent==='order'){await ownedArrangement(env,viewer,String(body.id));const ids=Array.isArray(body.files)?body.files.slice(0,100).map(String):[];await env.DB.batch(ids.map((id:string,i:number)=>env.DB.prepare('UPDATE files SET rank=? WHERE id=? AND arrangement_id=?').bind(i,id,body.id)));return Response.json({ok:true});}if(body.intent==='publish'){await publishArrangement(env,viewer,String(body.id),body.publish===true);return Response.json({ok:true});}return Response.json(await saveArrangement(env,viewer,body as any));}catch(error){if(error instanceof Response)throw error;return Response.json({error:error instanceof Error?error.message:'Unable to save this song.'},{status:400});}}
+import type { ActionFunctionArgs } from 'react-router';
+import { cloudflareContext } from '../lib/context.server';
+import { requireViewer } from '../lib/auth.server';
+import { requireSameOrigin, consumeRateLimit } from '../lib/security.server';
+import {
+  saveArrangement,
+  publishArrangement,
+  deleteArrangement,
+  removeFile,
+  ownedArrangement,
+} from '../lib/storage.server';
+export async function action({ request, context }: ActionFunctionArgs) {
+  const { env } = context.get(cloudflareContext);
+  requireSameOrigin(request);
+  const viewer = await requireViewer(request, env);
+  await consumeRateLimit(env, 'editor:' + viewer.userId, 100);
+  try {
+    const body = (await request.json()) as Record<string, any>;
+    if (body.intent === 'delete') {
+      await deleteArrangement(env, viewer, String(body.id));
+      return Response.json({ ok: true });
+    }
+    if (body.intent === 'remove-file') {
+      await removeFile(env, viewer, String(body.id));
+      return Response.json({ ok: true });
+    }
+    if (body.intent === 'order') {
+      await ownedArrangement(env, viewer, String(body.id));
+      const ids = Array.isArray(body.files) ? body.files.slice(0, 100).map(String) : [];
+      await env.DB.batch(
+        ids.map((id: string, i: number) =>
+          env.DB.prepare('UPDATE files SET rank=? WHERE id=? AND arrangement_id=?').bind(
+            i,
+            id,
+            body.id,
+          ),
+        ),
+      );
+      return Response.json({ ok: true });
+    }
+    if (body.intent === 'publish') {
+      await publishArrangement(env, viewer, String(body.id), body.publish === true);
+      return Response.json({ ok: true });
+    }
+    return Response.json(await saveArrangement(env, viewer, body as any));
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    return Response.json(
+      {
+        error: error instanceof Error ? error.message : 'Unable to save this song.',
+      },
+      { status: 400 },
+    );
+  }
+}
