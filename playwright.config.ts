@@ -8,7 +8,7 @@ export default defineConfig({
   expect: { timeout: 6000 },
   workers: 1,
   use: {
-    baseURL: process.env.PREVIEW_URL || 'http://127.0.0.1:5173',
+    baseURL: process.env.PREVIEW_URL || 'http://127.0.0.1:4173',
     headless: true,
     launchOptions: existsSync('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
       ? {
@@ -20,9 +20,9 @@ export default defineConfig({
   webServer: process.env.PREVIEW_URL
     ? undefined
     : {
-        command: 'npm run dev',
-        url: 'http://127.0.0.1:5173/health',
-        reuseExistingServer: true,
+        command: 'npm run dev -- --port 4173 --strictPort',
+        url: 'http://127.0.0.1:4173/health',
+        reuseExistingServer: false,
       },
   reporter: [['list']],
 });
