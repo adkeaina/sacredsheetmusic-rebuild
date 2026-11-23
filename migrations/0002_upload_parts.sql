@@ -1,0 +1,2 @@
+ALTER TABLE upload_tickets ADD COLUMN validated INTEGER NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS upload_parts(ticket_id TEXT NOT NULL REFERENCES upload_tickets(id) ON DELETE CASCADE,part_number INTEGER NOT NULL,etag TEXT NOT NULL,size INTEGER NOT NULL,PRIMARY KEY(ticket_id,part_number));

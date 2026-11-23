@@ -8,5 +8,6 @@ try {
  await db.prepare('DELETE FROM arrangement_search').run();
  await db.prepare(`INSERT INTO arrangement_search(arrangement_id,title,composer,tags,description,code) SELECT a.id,lower(a.title),lower(c.name),lower(a.voicing||' '||COALESCE(group_concat(t.name,' '),'')),lower(a.description),lower(a.code) FROM arrangements a JOIN composers c ON c.id=a.composer_id LEFT JOIN arrangement_tags at ON at.arrangement_id=a.id LEFT JOIN tags t ON t.id=at.tag_id GROUP BY a.id`).run();
  for(const [name,type] of [['sample.pdf','application/pdf'],['sample.mp3','audio/mpeg'],['sample.mid','audio/midi'],['score.svg','image/svg+xml']]){const content=await readFile('public/fixtures/'+name);await files.put('fixtures/'+name,content,{httpMetadata:{contentType:type}});await db.prepare('UPDATE files SET size=? WHERE storage_key=?').bind(content.byteLength,'fixtures/'+name).run();}
+ await files.put('runtime/ffmpeg-core.wasm',await readFile('node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm'),{httpMetadata:{contentType:'application/wasm'}});
  console.log('Seeded sample data and owned media. Re-running preserves existing records.');
 } finally{await mf.dispose();}
