@@ -9,7 +9,6 @@ export function SearchBox() {
   const navigate = useNavigate();
   const navType = useNavigationType();
   const [value, setValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const active = useRef<AbortController | null>(null);
@@ -26,7 +25,6 @@ export function SearchBox() {
         location.pathname === '/search' ? new URLSearchParams(location.search).get('q') || '' : '';
       setValue(q);
       lastTyped.current = q;
-      setLoading(false);
       setError('');
     }
   }, [location.key, location.pathname, location.search, navType]);
@@ -44,7 +42,6 @@ export function SearchBox() {
     p.set('q', q);
     p.delete('page');
     p.set('live', '1');
-    setLoading(true);
     setError('');
     try {
       const response = await fetch('/api/search?' + p, { signal: controller.signal });
@@ -64,8 +61,6 @@ export function SearchBox() {
     } catch {
       if (!controller.signal.aborted && lastTyped.current === q)
         setError('Search could not load. Your current results are still here.');
-    } finally {
-      if (active.current === controller) setLoading(false);
     }
   }
   function update(q: string) {
@@ -116,9 +111,6 @@ export function SearchBox() {
           <Search size={18} />
         </button>
       </div>
-      <span className="search-hint" aria-live="polite">
-        {loading ? 'Updating results…' : 'Results update as you type'}
-      </span>
       {error && (
         <div className="search-retry">
           <p role="status">{error}</p>

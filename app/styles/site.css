@@ -188,13 +188,6 @@ svg {
   padding: 7px 11px;
   background: #f4f7f6;
 }
-.search-hint {
-  font-size: 11px;
-  color: #5f655e;
-  display: block;
-  margin-top: 4px;
-  min-height: 17px;
-}
 .utility-bar {
   display: flex;
   justify-content: flex-end;
@@ -1029,9 +1022,6 @@ legend {
   }
   .search-form label {
     font-size: 11px;
-  }
-  .search-hint {
-    font-size: 10px;
   }
   .utility-bar {
     padding: 9px 14px;
