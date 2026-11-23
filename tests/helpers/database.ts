@@ -9,23 +9,33 @@ export function testDatabase() {
     sqlite.exec(readFileSync('migrations/' + name, 'utf8'));
   const prepare = (sql: string) => {
     let values: SQLInputValue[] = [];
+    const checkBindings = () => {
+      const count = (sql.replace(/'(?:''|[^'])*'|"(?:""|[^"])*"/g, '').match(/\?/g) || []).length;
+      if (count !== values.length)
+        throw new Error(
+          'Incorrect number of bindings: expected ' + count + ' got ' + values.length,
+        );
+    };
     const statement = {
       bind(...args: SQLInputValue[]) {
         values = args;
         return statement;
       },
       async first(column?: string) {
+        checkBindings();
         const row = sqlite.prepare(sql).get(...values);
         return column ? (row?.[column] ?? null) : (row ?? null);
       },
       async all() {
+        checkBindings();
         return {
           success: true,
           results: sqlite.prepare(sql).all(...values),
           meta: {},
         };
       },
-      async run() {
+      execute() {
+        checkBindings();
         const result = sqlite.prepare(sql).run(...values);
         return {
           success: true,
@@ -36,7 +46,11 @@ export function testDatabase() {
           },
         };
       },
+      async run() {
+        return statement.execute();
+      },
       async raw() {
+        checkBindings();
         return sqlite
           .prepare(sql)
           .all(...values)
@@ -51,7 +65,7 @@ export function testDatabase() {
       sqlite.exec('BEGIN');
       try {
         const result = [];
-        for (const s of statements) result.push(await s.run());
+        for (const s of statements) result.push(s.execute());
         sqlite.exec('COMMIT');
         return result;
       } catch (error) {

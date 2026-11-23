@@ -13,7 +13,7 @@ import { getViewer } from '../lib/auth.server';
 import { requireSameOrigin, requestLimit } from '../lib/security.server';
 import { addComment } from '../lib/community.server';
 export async function loader({ params, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const item = await first<{ id: string; code: string; title: string }>(
     env,
     'SELECT id,code,title FROM arrangements WHERE id=? AND published=1 AND available_at<=?',
@@ -23,7 +23,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
   return { item };
 }
 export async function action({ request, params, context }: ActionFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   requireSameOrigin(request);
   await requestLimit(env, request, 'comment', 20);
   const f = await request.formData();
@@ -35,7 +35,7 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
         .toLowerCase() !== 'sunday'
     )
       throw new Error('Please answer the spam-prevention question with Sunday.');
-    const viewer = await getViewer(request, env);
+    const viewer = await getViewer(request, env, authState);
     const item = await addComment(env, {
       arrangementId: params.id || String(f.get('id') || ''),
       name: String(f.get('name') || f.get('user_name') || ''),

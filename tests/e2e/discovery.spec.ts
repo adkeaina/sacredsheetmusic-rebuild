@@ -70,3 +70,48 @@ test('typing during composition waits and a newer search wins', async ({ page })
   await expect(input).toHaveValue('quiet prayer');
   await expect(page.getByText(/3 arrangements found/)).toBeVisible();
 });
+test('live search preserves its list and focus on failure and never commits a superseded response', async ({
+  page,
+}) => {
+  await page.goto('/search?q=faith&live=1');
+  const search = page.getByRole('searchbox', { name: 'Search sheet music' });
+  const initial = await page.locator('h1').textContent();
+  let requested!: () => void;
+  const began = new Promise<void>((r) => (requested = r));
+  await page.route('**/api/search?**', async (route) => {
+    const q = new URL(route.request().url()).searchParams.get('q');
+    if (q === 'prayer') {
+      requested();
+      await new Promise((r) => setTimeout(r, 650));
+    }
+    if (q === 'offline') {
+      await route.abort('failed');
+      return;
+    }
+    await route.continue();
+  });
+  await search.fill('prayer');
+  await began;
+  await search.fill('peace');
+  await expect(page.locator('h1')).not.toHaveText(/prayer/);
+  await expect(page).toHaveURL(/q=peace/);
+  await expect(search).toBeFocused();
+  const good = await page.locator('h1').textContent();
+  await search.fill('offline');
+  await expect(
+    page.getByText('Search could not load. Your current results are still here.'),
+  ).toBeVisible();
+  await expect(page.locator('h1')).toHaveText(good!);
+  await expect(search).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Retry search' })).toBeVisible();
+});
+test('clearing an empty-state type filter overrides the remembered cookie', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([{ name: 'ssm_type', value: 'organ', domain: '127.0.0.1', path: '/' }]);
+  await page.goto('/search?q=prayer&live=1&type=organ');
+  await page.getByRole('button', { name: 'Clear the type filter' }).click();
+  await expect(page.getByLabel('Filter by type')).toHaveValue('');
+  await expect(page.locator('.music-card').first()).toBeVisible();
+});

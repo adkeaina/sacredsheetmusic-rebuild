@@ -13,7 +13,7 @@ import type { ArrangementSummary } from '../lib/types.server';
 import { visitorSession, requireSameOrigin } from '../lib/visitor.server';
 import { MusicList } from '../components/MusicList';
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const visitor = await visitorSession(request, env);
   const items = await rows<ArrangementSummary>(
     env,
@@ -32,7 +32,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 }
 export async function action({ request, context }: ActionFunctionArgs) {
   requireSameOrigin(request);
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const visitor = await visitorSession(request, env);
   const form = await request.formData();
   const id = String(form.get('id') || '');

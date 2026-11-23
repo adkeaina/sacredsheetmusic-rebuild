@@ -4,9 +4,9 @@ import { requireViewer } from '../lib/auth.server';
 import { requireSameOrigin, consumeRateLimit } from '../lib/security.server';
 import { reserveUpload, uploadPart, finalizeUpload, cancelUpload } from '../lib/storage.server';
 export async function action({ request, params, context }: ActionFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   requireSameOrigin(request);
-  const viewer = await requireViewer(request, env);
+  const viewer = await requireViewer(request, env, authState);
   await consumeRateLimit(env, 'uploads:' + viewer.userId, 300);
   try {
     const op = params.op;

@@ -1,4 +1,4 @@
-import { run, type DbEnv } from './db.server';
+import type { DbEnv } from './db.server';
 export type MailInput = {
   userId?: string;
   recipient: string;
@@ -7,12 +7,14 @@ export type MailInput = {
   kind?: string;
   expiresAt?: number;
 };
-export async function enqueueMail(env: DbEnv, input: MailInput) {
+export function mailStatement(env: DbEnv, input: MailInput, ifChanged = false) {
   const id = crypto.randomUUID();
-  await run(
-    env,
-    'INSERT INTO mail_outbox(id,user_id,recipient,subject,body,kind,status,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?)',
-    [
+  return {
+    id,
+    statement: env.DB.prepare(
+      'INSERT INTO mail_outbox(id,user_id,recipient,subject,body,kind,status,created_at,expires_at) ' +
+        (ifChanged ? 'SELECT ?,?,?,?,?,?,?,?,? WHERE changes()=1' : 'VALUES(?,?,?,?,?,?,?,?,?)'),
+    ).bind(
       id,
       input.userId || null,
       input.recipient,
@@ -22,7 +24,11 @@ export async function enqueueMail(env: DbEnv, input: MailInput) {
       'captured',
       Date.now(),
       input.expiresAt || null,
-    ],
-  );
-  return id;
+    ),
+  };
+}
+export async function enqueueMail(env: DbEnv, input: MailInput) {
+  const mail = mailStatement(env, input);
+  await mail.statement.run();
+  return mail.id;
 }

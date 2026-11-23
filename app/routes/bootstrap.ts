@@ -4,10 +4,10 @@ import { requireViewer } from '../lib/auth.server';
 import { requireSameOrigin, privateKey, requestLimit } from '../lib/security.server';
 import { audit } from '../lib/db.server';
 export async function action({ request, context }: ActionFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   requireSameOrigin(request);
   await requestLimit(env, request, 'bootstrap', 5);
-  const viewer = await requireViewer(request, env);
+  const viewer = await requireViewer(request, env, authState);
   const body = (await request.json()) as { token?: string };
   if (
     !body.token ||

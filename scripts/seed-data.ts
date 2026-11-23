@@ -128,7 +128,10 @@ export function seedStatements(now = Date.now(), performanceCount = 0): SeedStat
       thumbnail: '/fixtures/score.svg',
     });
     const tags = [['satb', 'piano-solo', 'vocal-solo'][i % 3], topicIds[base]];
-    tags.forEach((tag) => insert('arrangement_tags', { arrangement_id: id, tag_id: tag }));
+    tags.forEach((tag) => {
+      insert('arrangement_tags', { arrangement_id: id, tag_id: tag });
+      insert('arrangement_tag_selections', { arrangement_id: id, tag_id: tag });
+    });
     insert('credits', {
       arrangement_id: id,
       composer_id: 'composer-' + (base % 6),

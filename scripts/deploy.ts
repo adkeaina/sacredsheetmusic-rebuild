@@ -142,7 +142,7 @@ if (mode === 'deploy') {
   const metadata = {
     main_module: 'index.js',
     compatibility_date: '2026-11-22',
-    compatibility_flags: ['nodejs_compat'],
+    compatibility_flags: ['nodejs_compat', 'global_fetch_strictly_public'],
     bindings: [
       { type: 'd1', name: 'DB', id: database },
       {
@@ -166,7 +166,6 @@ if (mode === 'deploy') {
       redact_query_string: true,
       logs: { enabled: true, invocation_logs: false },
     },
-    usage_model: 'standard',
   };
   const form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
@@ -182,5 +181,11 @@ if (mode === 'deploy') {
     enabled: true,
     previews_enabled: false,
   });
+  await api(
+    `/accounts/${account}/workers/scripts/${worker}/schedules`,
+    [{ cron: '0 * * * *' }, { cron: '*/15 * * * *' }],
+    undefined,
+    'PUT',
+  );
   console.log('Deployed version ' + result.id + ' to https://' + worker + '.adkeaina.workers.dev');
 }

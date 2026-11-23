@@ -1,3 +1,4 @@
+import { indexSourceSql, indexValues, type IndexSource } from '../app/lib/index-document';
 import { readFile, readdir } from 'node:fs/promises';
 import { seedStatements } from './seed-data';
 const account = 'd41631b94b54950fb1303d15d52f11fe',
@@ -33,9 +34,13 @@ for (const name of (await readdir('migrations')).filter((x) => x.endsWith('.sql'
   console.log('Applied ' + name);
 }
 for (const s of seedStatements()) await query(s.sql, s.params);
-await query(
-  `DELETE FROM arrangement_search;INSERT INTO arrangement_search(arrangement_id,title,composer,tags,description,code) SELECT a.id,lower(a.title),lower(c.name),lower(a.voicing||' '||COALESCE(group_concat(t.name,' '),'')),lower(a.description),lower(a.code) FROM arrangements a JOIN composers c ON c.id=a.composer_id LEFT JOIN arrangement_tags at ON at.arrangement_id=a.id LEFT JOIN tags t ON t.id=at.tag_id GROUP BY a.id`,
-);
+await query('DELETE FROM arrangement_search');
+const source = (await query(indexSourceSql + ' GROUP BY a.id'))[0].results as IndexSource[];
+for (const a of source)
+  await query(
+    'INSERT INTO arrangement_search(arrangement_id,title,composer,tags,description,code) VALUES(?,?,?,?,?,?)',
+    indexValues(a),
+  );
 for (const name of ['sample.pdf', 'sample.mp3', 'sample.mid', 'score.svg', 'ffmpeg-core.wasm']) {
   const runtime = name.endsWith('.wasm');
   const bytes = await readFile(

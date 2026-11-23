@@ -12,7 +12,7 @@ import { requestLimit } from '../lib/security.server';
 import { enqueueMail } from '../lib/mail.server';
 import { requireSameOrigin } from '../lib/visitor.server';
 export async function loader({ params, request, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const contact = new URL(request.url).pathname.replace(/\.data$/, '') === '/questions/ask';
   const slug = params.slug || 'faq';
   const page = contact
@@ -39,7 +39,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
 }
 export async function action({ request, context }: ActionFunctionArgs) {
   requireSameOrigin(request);
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   await requestLimit(env, request, 'contact', 10);
   const f = await request.formData();
   const email = String(f.get('email') || '').trim();

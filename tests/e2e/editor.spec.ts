@@ -88,16 +88,17 @@ test('multipart transfer remains private, rejects MIME mismatch, and can be retr
     })
   ).json();
   expect((await post('/api/uploads/complete/' + ticket.id, {})).status()).toBe(400);
-  const first = Buffer.alloc(8388608);
-  first.write('%PDF-1.7\n');
-  expect(
-    (
-      await page.request.post('/api/uploads/part/' + ticket.id + '?part=1', {
-        headers: { Origin: baseURL! },
-        data: first,
-      })
-    ).ok(),
-  ).toBe(true);
+  await page.goto('/admin');
+  const firstStatus = await page.evaluate(async (id) => {
+    const bytes = new Uint8Array(8388608);
+    bytes.set(new TextEncoder().encode('%PDF-1.7\n'));
+    const response = await fetch('/api/uploads/part/' + id + '?part=1', {
+      method: 'POST',
+      body: bytes,
+    });
+    return response.status;
+  }, ticket.id);
+  expect(firstStatus).toBe(200);
   expect(
     (
       await page.request.post('/api/uploads/part/' + ticket.id + '?part=2', {
@@ -156,6 +157,38 @@ test('a WAV recording can be converted to MP3 in the browser', async ({ page, ba
     timeout: 45000,
   });
   await expect(page.getByRole('link', { name: 'sample.mp3', exact: true })).toBeVisible();
+  page.on('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Delete this song', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Composer workspace' })).toBeVisible();
+});
+test('a malformed PDF stays recoverable in a draft with an honest processing error', async ({
+  page,
+  baseURL,
+}) => {
+  const key = 'broken' + Date.now().toString(36);
+  await page.request.post('/api/auth/sign-up/email', {
+    headers: { Origin: baseURL! },
+    data: {
+      username: key,
+      name: 'Broken PDF ' + key,
+      email: key + '@example.invalid',
+      password: 'SampleEditor!2026',
+    },
+  });
+  await page.goto('/admin/products/new_original_song');
+  await page.getByLabel('Song name', { exact: true }).fill('Recoverable PDF ' + key);
+  await page.getByLabel('SATB', { exact: true }).check();
+  await page.getByLabel('I have permission to share these files and this music.').check();
+  await page.getByLabel('PDF sheet music').setInputFiles({
+    name: 'broken.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.7\nNot a valid PDF document'),
+  });
+  await page.getByRole('button', { name: 'Save this song', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('PDF processing failed', { timeout: 15000 });
+  await expect(page.getByRole('link', { name: 'broken.pdf' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Regenerate preview' })).toBeVisible();
+  await expect(page.getByRole('status')).not.toContainText('published');
   page.on('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Delete this song', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Composer workspace' })).toBeVisible();

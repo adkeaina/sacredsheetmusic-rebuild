@@ -1,5 +1,7 @@
 # Sacred Sheet Music — independent rebuild preview
 
+Public preview: **https://sacred-sheet-music-preview.adkeaina.workers.dev**
+
 A TypeScript / React Router application on Cloudflare Workers, D1 and private R2. This project is unofficial. Its fictional catalog and original demonstration scores are not the original website's catalog. Do not import music, identities or account data without authorization.
 
 ## Local development

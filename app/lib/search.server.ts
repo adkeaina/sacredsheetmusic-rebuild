@@ -1,18 +1,8 @@
 import type { CatalogQuery, CatalogPage, ArrangementSummary, Facet } from './types.server';
 import { rows, first, run, summarySelect, visible, type DbEnv, type SqlValue } from './db.server';
 const ignored = new Set(['with', 'and', 'or', 'the', 'a', 'by', 'for', 'sheet', 'music']);
-export function normalizeSearch(value: string) {
-  return value
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[’']/g, '')
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .trim()
-    .split(/\s+/)
-    .map((w) => (w === 'oh' ? 'o' : w))
-    .join(' ');
-}
+import { normalizeSearch, indexSourceSql, indexValues, type IndexSource } from './index-document';
+export { normalizeSearch } from './index-document';
 export function searchTokens(value: string) {
   return normalizeSearch(value.slice(0, 160))
     .split(' ')
@@ -20,19 +10,7 @@ export function searchTokens(value: string) {
     .slice(0, 12);
 }
 export async function reindexArrangement(env: DbEnv, id: string) {
-  const a = await first<{
-    id: string;
-    title: string;
-    composer: string;
-    description: string;
-    code: string;
-    voicing: string;
-    tags: string;
-  }>(
-    env,
-    `SELECT a.id,a.title,a.description,a.code,a.voicing,c.name AS composer,COALESCE(group_concat(t.name,' '),'') AS tags FROM arrangements a JOIN composers c ON c.id=a.composer_id LEFT JOIN arrangement_tags at ON at.arrangement_id=a.id LEFT JOIN tags t ON t.id=at.tag_id WHERE a.id=? GROUP BY a.id`,
-    [id],
-  );
+  const a = await first<IndexSource>(env, indexSourceSql + ' WHERE a.id=? GROUP BY a.id', [id]);
   const deleteStatement = env.DB.prepare(
     'DELETE FROM arrangement_search WHERE arrangement_id=?',
   ).bind(id);
@@ -44,14 +22,7 @@ export async function reindexArrangement(env: DbEnv, id: string) {
     deleteStatement,
     env.DB.prepare(
       'INSERT INTO arrangement_search(arrangement_id,title,composer,tags,description,code) VALUES(?,?,?,?,?,?)',
-    ).bind(
-      id,
-      normalizeSearch(a.title),
-      normalizeSearch(a.composer),
-      normalizeSearch(a.tags + ' ' + a.voicing),
-      normalizeSearch(a.description),
-      normalizeSearch(a.code),
-    ),
+    ).bind(...indexValues(a)),
   ]);
 }
 export async function queryCatalog(env: DbEnv, query: CatalogQuery): Promise<CatalogPage> {
@@ -64,6 +35,11 @@ export async function queryCatalog(env: DbEnv, query: CatalogQuery): Promise<Cat
     join = ' JOIN arrangement_search ON arrangement_search.arrangement_id=a.id';
     where += ' AND arrangement_search MATCH ?';
     params.push(tokens.map((t) => '"' + t.replaceAll('"', '') + '"*').join(' AND '));
+  }
+  if (query.composerId) {
+    where +=
+      ' AND (a.composer_id=? OR EXISTS(SELECT 1 FROM credits cr WHERE cr.arrangement_id=a.id AND cr.composer_id=?))';
+    params.push(query.composerId, query.composerId);
   }
   const selected = (query.tag || '').split(',').filter(Boolean).slice(0, 12);
   if (selected.includes('original')) where += ' AND a.original=1';
@@ -99,8 +75,8 @@ export async function queryCatalog(env: DbEnv, query: CatalogQuery): Promise<Cat
   const orderParams: SqlValue[] = [];
   if (tokens.length) {
     order =
-      'CASE WHEN arrangement_search.title=? THEN 0 WHEN arrangement_search.title LIKE ? THEN 1 ELSE 2 END,bm25(arrangement_search,0,8,4,3,1,8),a.title,a.id';
-    orderParams.push(normalized, normalized + '%');
+      'CASE WHEN arrangement_search.title=? THEN 0 WHEN instr(arrangement_search.title,?)=1 THEN 1 ELSE 2 END,bm25(arrangement_search,0,8,4,3,1,8),a.title,a.id';
+    orderParams.push(normalized, normalized);
   }
   if (query.seed === 'recent' && !tokens.length) order = 'a.created_at DESC,a.id';
   const items = await rows<ArrangementSummary>(
@@ -116,13 +92,8 @@ export async function queryCatalog(env: DbEnv, query: CatalogQuery): Promise<Cat
   const suggestions = normalized
     ? await rows<{ name: string; href: string }>(
         env,
-        `SELECT t.name,'/'||t.slug AS href FROM tags t WHERE lower(t.name) LIKE ? AND EXISTS(SELECT 1 FROM arrangement_tags at JOIN arrangements a ON a.id=at.arrangement_id WHERE at.tag_id=t.id AND ${visible}) UNION ALL SELECT c.name,'/composer/'||c.slug AS href FROM composers c WHERE lower(c.name) LIKE ? AND EXISTS(SELECT 1 FROM arrangements a WHERE a.composer_id=c.id AND ${visible}) LIMIT 6`,
-        [
-          query.q.trim().toLowerCase() + '%',
-          Date.now(),
-          query.q.trim().toLowerCase() + '%',
-          Date.now(),
-        ],
+        `SELECT t.name,'/'||t.slug AS href FROM tags t WHERE instr(lower(t.name),?)=1 AND EXISTS(SELECT 1 FROM arrangement_tags at JOIN arrangements a ON a.id=at.arrangement_id WHERE at.tag_id=t.id AND ${visible}) UNION ALL SELECT c.name,'/composer/'||c.slug AS href FROM composers c WHERE instr(lower(c.name),?)=1 AND EXISTS(SELECT 1 FROM arrangements a WHERE a.composer_id=c.id AND ${visible}) LIMIT 6`,
+        [query.q.trim().toLowerCase(), Date.now(), query.q.trim().toLowerCase(), Date.now()],
       )
     : [];
   return { items, total, page, pages, facets, suggestions };

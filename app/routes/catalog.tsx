@@ -7,19 +7,29 @@ import {
   useSearchParams,
   type LoaderFunctionArgs,
 } from 'react-router';
+import { takeSearch } from '../lib/client/search-cache';
+import { useRevalidator } from 'react-router';
 import { cloudflareContext } from '../lib/context.server';
 import { queryCatalog } from '../lib/search.server';
-import { getTags } from '../lib/db.server';
+import { getTags, first } from '../lib/db.server';
 import { MusicList, Pagination } from '../components/MusicList';
 export async function loader({ request, params, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const url = new URL(request.url);
   const q = url.searchParams.get('q') || '';
   const tags = await getTags(env);
   const raw = params.tag || params['*'] || '';
   const slug = raw.replaceAll('_', '-').toLowerCase();
+  const alias = await first<{ tag_id: string }>(
+    env,
+    'SELECT tag_id FROM tag_aliases WHERE slug=?',
+    [slug],
+  );
   const current = tags.find(
-    (t) => t.slug === slug || t.name.toLowerCase() === raw.replaceAll('_', ' ').toLowerCase(),
+    (t) =>
+      t.id === alias?.tag_id ||
+      t.slug === slug ||
+      t.name.toLowerCase() === raw.replaceAll('_', ' ').toLowerCase(),
   );
   const original = slug === 'original';
   const all = slug === 'all' || url.pathname.replace(/\.data$/, '') === '/music/index';
@@ -158,7 +168,7 @@ export default function Catalog() {
           <button
             onClick={() => {
               const next = new URLSearchParams(params);
-              next.delete('type');
+              next.set('type', '');
               setParams(next);
             }}
           >
@@ -169,5 +179,28 @@ export default function Catalog() {
       <Pagination result={result} />
       <p className="sample-disclaimer">Sample catalog · Demonstration scores and recordings</p>
     </>
+  );
+}
+
+export async function clientLoader({
+  request,
+  serverLoader,
+}: {
+  request: Request;
+  serverLoader: () => Promise<Awaited<ReturnType<typeof loader>>>;
+}) {
+  const url = new URL(request.url);
+  const cached = takeSearch(url.pathname + url.search);
+  return cached || (await serverLoader());
+}
+export function ErrorBoundary() {
+  const revalidator = useRevalidator();
+  return (
+    <section>
+      <h1>Search is temporarily unavailable</h1>
+      <p>Your query is still in the search box above. Try again when the connection returns.</p>
+      <button onClick={() => void revalidator.revalidate()}>Retry results</button>
+      <Link to="/all">Browse all music</Link>
+    </section>
   );
 }

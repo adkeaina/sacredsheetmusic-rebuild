@@ -5,7 +5,7 @@ import { visitorSession } from '../lib/visitor.server';
 import { recordEvent } from '../lib/community.server';
 import { safeExternalUrl } from '../lib/security.server';
 export async function loader({ request, params, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   if (params.code) {
     const item = await first<{ id: string; source_url: string }>(
       env,

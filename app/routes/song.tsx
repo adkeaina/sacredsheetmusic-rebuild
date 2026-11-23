@@ -7,7 +7,7 @@ import { visitorSession } from '../lib/visitor.server';
 import { ScorePreview } from '../components/ScorePreview';
 import { MusicList } from '../components/MusicList';
 export async function loader({ request, params, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const item = await getArrangement(env, params.code || '');
   if (!item) throw new Response('Arrangement not found', { status: 404 });
   const visitor = await visitorSession(request, env);

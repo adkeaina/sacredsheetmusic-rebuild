@@ -1,11 +1,11 @@
-import { bindings, defineConfig } from 'cf/config';
+import { bindings, defineConfig, triggers } from 'cf/config';
 export default defineConfig({
   accountId: 'd41631b94b54950fb1303d15d52f11fe',
   worker: {
     name: 'sacred-sheet-music-preview',
     entrypoint: './workers/app.ts',
     compatibilityDate: '2026-11-22',
-    compatibilityFlags: ['nodejs_compat'],
+    compatibilityFlags: ['nodejs_compat', 'global_fetch_strictly_public'],
     env: {
       DB: bindings.d1({
         id: '9dfd38b2-ffb0-4e63-b509-dd3558e88ace',
@@ -17,6 +17,10 @@ export default defineConfig({
       HOUSEHOLD_SECRET: bindings.secret(),
       PREVIEW_MODE: bindings.text('true'),
     },
+    triggers: [
+      triggers.scheduled({ schedule: '0 * * * *' }),
+      triggers.scheduled({ schedule: '*/15 * * * *' }),
+    ],
     observability: {
       enabled: true,
       traces: { enabled: true, headSamplingRate: 0.1 },

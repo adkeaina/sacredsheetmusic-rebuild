@@ -1,0 +1,6 @@
+Optional browser audio processing uses unmodified @ffmpeg/core 0.12.10, distributed under GPL-2.0-or-later, together with the MIT-licensed @ffmpeg/ffmpeg wrapper. The pinned npm package provides ffmpeg-core.js and ffmpeg-core.wasm.
+Corresponding project source, external-library build definitions and build instructions: https://github.com/ffmpegwasm/ffmpeg.wasm
+Core source and build configuration: https://github.com/ffmpegwasm/ffmpeg.wasm/tree/main/packages/core
+FFmpeg upstream source: https://ffmpeg.org/download.html
+GPL-2.0.txt and FFMPEG-WASM-LICENSE.txt accompany these assets.
+No third-party music is included with this runtime.

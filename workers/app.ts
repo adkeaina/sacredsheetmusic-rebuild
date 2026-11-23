@@ -1,3 +1,6 @@
+import { collectFiles } from '../app/lib/maintenance.server';
+import { processCatalogJob } from '../app/lib/catalog-jobs.server';
+import { first } from '../app/lib/db.server';
 import { createRequestHandler, RouterContextProvider } from 'react-router';
 import { cloudflareContext } from '../app/lib/context.server';
 import type { AppEnv } from '../app/lib/types.server';
@@ -6,6 +9,21 @@ const handler = createRequestHandler(
   import.meta.env.MODE,
 );
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(
+      (async () => {
+        if (event.cron === '0 * * * *') {
+          await collectFiles(env);
+          return;
+        }
+        const job = await first<{ id: string }>(
+          env,
+          "SELECT id FROM processing_jobs WHERE type='catalog-sync' AND status!='complete' ORDER BY created_at LIMIT 1",
+        );
+        if (job) await processCatalogJob(env, job.id);
+      })(),
+    );
+  },
   async fetch(request: Request, env: AppEnv, ctx: ExecutionContext) {
     const path = new URL(request.url).pathname;
     if (path === '/health')
@@ -19,7 +37,7 @@ export default {
       }
     }
     const context = new RouterContextProvider();
-    context.set(cloudflareContext, { env, ctx });
+    context.set(cloudflareContext, { env, ctx, authState: {} });
     const response = await handler(request, context);
     if (!response.headers.has('Cache-Control'))
       response.headers.set('Cache-Control', 'private, no-store');

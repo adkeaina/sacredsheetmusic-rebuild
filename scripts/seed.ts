@@ -1,3 +1,4 @@
+import { indexSourceSql, indexValues, type IndexSource } from '../app/lib/index-document';
 import { localRuntime } from './local-runtime';
 import { seedStatements } from './seed-data';
 import { readFile } from 'node:fs/promises';
@@ -7,11 +8,19 @@ try {
   for (let i = 0; i < data.length; i += 40)
     await db.batch(data.slice(i, i + 40).map((s) => db.prepare(s.sql).bind(...s.params)));
   await db.prepare('DELETE FROM arrangement_search').run();
-  await db
-    .prepare(
-      `INSERT INTO arrangement_search(arrangement_id,title,composer,tags,description,code) SELECT a.id,lower(a.title),lower(c.name),lower(a.voicing||' '||COALESCE(group_concat(t.name,' '),'')),lower(a.description),lower(a.code) FROM arrangements a JOIN composers c ON c.id=a.composer_id LEFT JOIN arrangement_tags at ON at.arrangement_id=a.id LEFT JOIN tags t ON t.id=at.tag_id GROUP BY a.id`,
-    )
-    .run();
+  const source = (await db.prepare(indexSourceSql + ' GROUP BY a.id').all<IndexSource>()).results;
+  for (let i = 0; i < source.length; i += 40)
+    await db.batch(
+      source
+        .slice(i, i + 40)
+        .map((a) =>
+          db
+            .prepare(
+              'INSERT INTO arrangement_search(arrangement_id,title,composer,tags,description,code) VALUES(?,?,?,?,?,?)',
+            )
+            .bind(...indexValues(a)),
+        ),
+    );
   for (const [name, type] of [
     ['sample.pdf', 'application/pdf'],
     ['sample.mp3', 'audio/mpeg'],

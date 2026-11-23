@@ -1,9 +1,10 @@
+import { nextBufferSize, validateRemoteSize } from '../lib/remote-transfer.server';
 import { redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from 'react-router';
 import { cloudflareContext } from '../lib/context.server';
 import { requireAdmin } from '../lib/auth.server';
 import { requireSameOrigin, consumeRateLimit } from '../lib/security.server';
 import { first, run, audit } from '../lib/db.server';
-import { validateImportUrl } from '../lib/admin.server';
+import { validateImportUrl, validateTrustedImport } from '../lib/admin.server';
 import {
   reserveUpload,
   uploadPart,
@@ -33,8 +34,8 @@ function publicAddress(value: string) {
     !(n[0] === 203 && n[1] === 0 && n[2] === 113)
   );
 }
-async function checkedFetch(value: string, signal: AbortSignal) {
-  let url = validateImportUrl(value);
+async function checkedFetch(value: string, signal: AbortSignal, hosts: string[]) {
+  let url = validateTrustedImport(value, hosts);
   for (let redirects = 0; redirects <= 3; redirects++) {
     const records = await Promise.all(
       ['A', 'AAAA'].map(async (type) => {
@@ -65,7 +66,7 @@ async function checkedFetch(value: string, signal: AbortSignal) {
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       await response.body?.cancel();
       if (redirects === 3) throw new Error('Too many redirects.');
-      url = validateImportUrl(new URL(response.headers.get('Location') || '', url).href);
+      url = validateTrustedImport(new URL(response.headers.get('Location') || '', url).href, hosts);
       continue;
     }
     if (!response.ok) throw new Error('The remote server returned ' + response.status + '.');
@@ -74,8 +75,8 @@ async function checkedFetch(value: string, signal: AbortSignal) {
   throw new Error('Import failed.');
 }
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
-  await requireAdmin(request, env);
+  const { env, authState } = context.get(cloudflareContext);
+  await requireAdmin(request, env, authState);
   const id = new URL(request.url).searchParams.get('id') || '';
   const file = await first<{ id: string }>(
     env,
@@ -86,9 +87,9 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   return Response.json({ fileId: file.id }, { headers: { 'Cache-Control': 'private,no-store' } });
 }
 export async function action({ request, context }: ActionFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   requireSameOrigin(request);
-  const viewer = await requireAdmin(request, env);
+  const viewer = await requireAdmin(request, env, authState);
   await consumeRateLimit(env, 'import:' + viewer.userId, 10);
   const form = await request.formData();
   let ticketId = '';
@@ -96,12 +97,21 @@ export async function action({ request, context }: ActionFunctionArgs) {
     if (form.get('rights') !== 'on' || String(form.get('provenance') || '').trim().length < 5)
       throw new Error('Permission and attribution are required.');
     const signal = AbortSignal.timeout(60000);
-    const { response, url } = await checkedFetch(String(form.get('url') || ''), signal);
+    const allowed = await first<{ value: string }>(
+      env,
+      "SELECT value FROM preferences WHERE key='import_trusted_hosts'",
+    );
+    const hosts = [
+      new URL(request.url).hostname,
+      ...(allowed?.value || '').split(/[\s,]+/).filter(Boolean),
+    ];
+    const { response, url } = await checkedFetch(String(form.get('url') || ''), signal, hosts);
     const size = Number(response.headers.get('Content-Length'));
     if (!size || size > 120 * 1024 * 1024 || !response.body)
       throw new Error(
         'The remote server must declare a file size no larger than 120 MiB. Download it yourself and use the regular uploader otherwise.',
       );
+    validateRemoteSize(size);
     const filename = decodeURIComponent(url.pathname.split('/').at(-1) || 'import.pdf');
     const extension = filename.toLowerCase().split('.').at(-1);
     const type =
@@ -152,7 +162,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
             part++,
             new Request(request.url, { method: 'POST', body: buffer }),
           );
-          buffer = new Uint8Array(Math.min(PART_SIZE, size - (part - 1) * PART_SIZE));
+          buffer = new Uint8Array(nextBufferSize(size, part));
           used = 0;
         }
       }

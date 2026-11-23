@@ -1,0 +1,20 @@
+name: Verify application
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node --input-type=module -e "import{writeFileSync}from'node:fs';import{randomBytes}from'node:crypto';writeFileSync('.dev.vars',['AUTH_SECRET','ADMIN_BOOTSTRAP_TOKEN','HOUSEHOLD_SECRET'].map(k=>k+'='+randomBytes(32).toString('hex')).join('\n'),{mode:384});"
+      - run: npm run db:setup
+      - run: npm run seed
+      - run: npm run check
+      - run: npm test
+      - run: npm run test:e2e
+      - run: npm run build

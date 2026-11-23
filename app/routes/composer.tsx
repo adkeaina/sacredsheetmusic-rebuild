@@ -14,7 +14,7 @@ type Composer = {
   notice: string;
 };
 export async function loader({ request, params, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   if (!params.slug)
     return {
       list: await rows<Composer>(
@@ -26,12 +26,13 @@ export async function loader({ request, params, context }: LoaderFunctionArgs) {
     };
   const composer = await first<Composer>(
     env,
-    'SELECT id,name,slug,bio,website,contact_url,sample,notice FROM composers WHERE slug=?',
-    [params.slug],
+    'SELECT id,name,slug,bio,website,contact_url,sample,notice FROM composers WHERE id=COALESCE((SELECT composer_id FROM composer_aliases WHERE slug=?),(SELECT id FROM composers WHERE slug=?))',
+    [params.slug, params.slug],
   );
   if (!composer) throw new Response('Composer not found', { status: 404 });
   const result = await queryCatalog(env, {
-    q: composer.name,
+    q: '',
+    composerId: composer.id,
     page: Number(new URL(request.url).searchParams.get('page') || 1),
     seed: 'composer',
   });

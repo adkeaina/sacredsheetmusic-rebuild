@@ -1,5 +1,5 @@
 import { first, rows, run, visible, summarySelect, type DbEnv } from './db.server';
-import { enqueueMail } from './mail.server';
+import { mailStatement } from './mail.server';
 async function publicItem(env: DbEnv, id: string) {
   const item = await first<{
     id: string;
@@ -46,24 +46,23 @@ export async function addComment(
     ),
   );
   const dedupe = Array.from(new Uint8Array(bytes), (x) => x.toString(16).padStart(2, '0')).join('');
-  const result = await run(
-    env,
+  const statement = env.DB.prepare(
     'INSERT OR IGNORE INTO comments(id,arrangement_id,user_id,name,email,text,rating,difficulty,created_at,dedupe_key) VALUES(?,?,?,?,?,?,?,?,?,?)',
-    [
-      crypto.randomUUID(),
-      item.id,
-      input.userId || null,
-      name,
-      input.email.slice(0, 254),
-      text,
-      input.rating,
-      input.difficulty,
-      Date.now(),
-      dedupe,
-    ],
+  ).bind(
+    crypto.randomUUID(),
+    item.id,
+    input.userId || null,
+    name,
+    input.email.slice(0, 254),
+    text,
+    input.rating,
+    input.difficulty,
+    Date.now(),
+    dedupe,
   );
-  if (result.meta.changes)
-    await enqueueMail(env, {
+  const mail = mailStatement(
+    env,
+    {
       userId: item.user_id || undefined,
       recipient: item.private_email || 'administrator@example.invalid',
       subject: 'Comment on ' + item.title,
@@ -75,7 +74,10 @@ export async function addComment(
         (input.rating ?? 'none') +
         '\nReply address: ' +
         input.email,
-    });
+    },
+    true,
+  );
+  await env.DB.batch([statement, mail.statement]);
   return item;
 }
 export type VoteInput = {
@@ -101,10 +103,7 @@ export async function addVote(env: DbEnv, input: VoteInput, now = Date.now()) {
   );
   if (!entry) throw new Error('This song is not entered in that competition.');
   const item = await publicItem(env, input.arrangementId);
-  if (
-    input.rating !== null &&
-    (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5)
-  )
+  if (input.rating !== null && ![1, 2, 3, 4, 4.5, 5].includes(input.rating))
     throw new Error('Choose a rating from 1 to 5.');
   if (
     input.feedback.length > 10000 ||
@@ -113,31 +112,21 @@ export async function addVote(env: DbEnv, input: VoteInput, now = Date.now()) {
   )
     throw new Error('Please include constructive feedback.');
   const id = crypto.randomUUID();
-  try {
-    await run(
-      env,
-      'INSERT INTO votes(id,competition_id,arrangement_id,household_key,session_id,user_id,rating,feedback,created_at,counts) VALUES(?,?,?,?,?,?,?,?,?,?)',
-      [
-        id,
-        input.competitionId,
-        input.arrangementId,
-        input.household,
-        input.session,
-        input.userId,
-        input.rating,
-        input.feedback.trim(),
-        now,
-        now < contest.closes_at ? 1 : 0,
-      ],
-    );
-  } catch (error) {
-    if (String(error).includes('UNIQUE'))
-      throw new Error(
-        'You or someone in your household already reviewed this song in this competition.',
-      );
-    throw error;
-  }
-  await enqueueMail(env, {
+  const statement = env.DB.prepare(
+    'INSERT INTO votes(id,competition_id,arrangement_id,household_key,session_id,user_id,rating,feedback,created_at,counts) VALUES(?,?,?,?,?,?,?,?,?,?)',
+  ).bind(
+    id,
+    input.competitionId,
+    input.arrangementId,
+    input.household,
+    input.session,
+    input.userId,
+    input.rating,
+    input.feedback.trim(),
+    now,
+    now < contest.closes_at ? 1 : 0,
+  );
+  const mail = mailStatement(env, {
     userId: item.user_id || undefined,
     recipient: item.private_email || 'administrator@example.invalid',
     subject: 'Private competition feedback: ' + item.title,
@@ -147,6 +136,15 @@ export async function addVote(env: DbEnv, input: VoteInput, now = Date.now()) {
       '\nRating: ' +
       (input.rating ?? 'none'),
   });
+  try {
+    await env.DB.batch([statement, mail.statement]);
+  } catch (error) {
+    if (String(error).includes('UNIQUE'))
+      throw new Error(
+        'You or someone in your household already reviewed this song in this competition.',
+      );
+    throw error;
+  }
   return { counts: now < contest.closes_at };
 }
 export type Standing = {

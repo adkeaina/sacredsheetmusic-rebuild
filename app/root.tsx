@@ -38,10 +38,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const visitor = await visitorSession(request, env);
   return data(
-    { tags: await getTags(env), viewer: await getViewer(request, env) },
+    { tags: await getTags(env), viewer: await getViewer(request, env, authState) },
     {
       headers: visitor.header
         ? { 'Set-Cookie': visitor.header, 'Cache-Control': 'private, no-store' }
@@ -78,4 +78,17 @@ export function ErrorBoundary() {
       <Link to="/">Return to sheet music</Link>
     </main>
   );
+}
+
+export function shouldRevalidate({
+  nextUrl,
+  formMethod,
+  defaultShouldRevalidate,
+}: {
+  nextUrl: URL;
+  formMethod?: string;
+  defaultShouldRevalidate: boolean;
+}) {
+  if (!formMethod && nextUrl.pathname === '/search') return false;
+  return defaultShouldRevalidate;
 }

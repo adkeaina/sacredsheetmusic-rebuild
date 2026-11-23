@@ -38,6 +38,11 @@ test('administrator tools persist catalog, taxonomy, content, settings and captu
   await page.getByLabel('slug', { exact: true }).fill('test-category-' + suffix);
   await page.getByRole('button', { name: 'Save record', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Changes saved');
+  await page
+    .locator('.admin-search')
+    .getByRole('textbox')
+    .fill('Test category ' + suffix);
+  await page.locator('.admin-search').getByRole('button', { name: 'Search', exact: true }).click();
   await expect(
     page.getByRole('cell', { name: 'Test category ' + suffix, exact: false }),
   ).toBeVisible();
@@ -57,7 +62,7 @@ test('administrator tools persist catalog, taxonomy, content, settings and captu
   await expect(page.getByRole('status')).toContainText('Changes saved');
   await page.goto('/admin/catalog');
   await page.getByRole('button', { name: 'Regenerate preview', exact: true }).first().click();
-  await expect(page.getByRole('status')).toContainText('Preview regenerated');
+  await expect(page.getByRole('status')).toContainText('Preview regenerated', { timeout: 20000 });
   const row = page
     .getByRole('row')
     .filter({

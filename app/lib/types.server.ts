@@ -9,6 +9,7 @@ export type Viewer = {
 } | null;
 export type CatalogQuery = {
   q: string;
+  composerId?: string;
   tag?: string;
   type?: string;
   page: number;
@@ -47,3 +48,5 @@ declare module 'react-router' {
     cloudflare: { env: AppEnv; ctx: ExecutionContext };
   }
 }
+
+export type AuthState = { viewer?: Promise<Viewer> };

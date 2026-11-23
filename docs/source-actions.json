@@ -3,812 +3,1044 @@
     "source": "app/controllers/accounts_controller.rb",
     "line": 7,
     "action": "login",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/accounts/login",
+    "method": "GET/POST maintained account workflow",
+    "evidence": "tests/e2e/accounts.spec.ts"
   },
   {
     "source": "app/controllers/accounts_controller.rb",
     "line": 21,
     "action": "logout",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/accounts/logout",
+    "method": "GET/POST maintained account workflow",
+    "evidence": "tests/e2e/accounts.spec.ts"
   },
   {
     "source": "app/controllers/accounts_controller.rb",
     "line": 27,
     "action": "welcome",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin",
+    "method": "GET/POST maintained account workflow",
+    "evidence": "tests/e2e/accounts.spec.ts"
   },
   {
     "source": "app/controllers/accounts_controller.rb",
     "line": 31,
     "action": "reset_password",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/accounts/reset_password",
+    "method": "GET/POST maintained account workflow",
+    "evidence": "tests/e2e/accounts.spec.ts"
   },
   {
     "source": "app/controllers/accounts_controller.rb",
     "line": 52,
     "action": "edit_composer_login",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/accounts/edit_composer_login",
+    "method": "GET/POST maintained account workflow",
+    "evidence": "tests/e2e/accounts.spec.ts"
   },
   {
     "source": "app/controllers/accounts_controller.rb",
     "line": 61,
     "action": "new_composer_login",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/accounts/new_composer_login",
+    "method": "GET/POST maintained account workflow",
+    "evidence": "tests/e2e/accounts.spec.ts"
   },
   {
     "source": "app/controllers/accounts_controller.rb",
     "line": 113,
     "action": "send_success_account_email",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/base_controller.rb",
     "line": 11,
     "action": "set_substruct_defaults",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/content_nodes_controller.rb",
     "line": 6,
     "action": "list",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/pages",
+    "method": "GET/POST pages and sections",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 6,
     "action": "index",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/catalog",
+    "method": "GET searchable/paginated catalog",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 12,
     "action": "only_product_editor?",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 22,
     "action": "spam_some_composers",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/messages",
+    "method": "POST capture-only announcement or statistics",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 31,
     "action": "spam_all_composers",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/messages",
+    "method": "POST capture-only announcement or statistics",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 36,
     "action": "spam_composer",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/messages",
+    "method": "POST capture-only announcement or statistics",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 44,
     "action": "destroy",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/api/editor",
+    "method": "POST intent=delete",
+    "evidence": "tests/e2e/editor.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 54,
     "action": "edit_current_user",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/accounts/edit_composer_login",
+    "method": "GET/POST",
+    "evidence": "tests/e2e/accounts.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 68,
     "action": "spam_composers_and_render",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 80,
     "action": "spam_all_composers_pre",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/messages",
+    "method": "POST capture-only announcement or statistics",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 84,
     "action": "single_composer_stats",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/messages",
+    "method": "POST capture-only announcement or statistics",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 94,
     "action": "list",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/catalog",
+    "method": "GET searchable/paginated catalog",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 106,
     "action": "new",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/products/new_original_song",
+    "method": "GET editor",
+    "evidence": "tests/e2e/editor.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 112,
     "action": "new_original_song",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/products/new_original_song",
+    "method": "GET editor",
+    "evidence": "tests/e2e/editor.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 118,
     "action": "new_arrangement_song",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/products/new_arrangement_song",
+    "method": "GET editor",
+    "evidence": "app/routes/editor.tsx; tests/uploads.test.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 124,
     "action": "edit_song_easy",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/products/edit_song_easy/:id",
+    "method": "GET editor",
+    "evidence": "tests/e2e/editor.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 138,
     "action": "edit",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/products/edit_song_easy/:id",
+    "method": "GET editor",
+    "evidence": "tests/e2e/editor.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 146,
     "action": "with_problems",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/diagnostics",
+    "method": "GET/POST bounded inspection",
+    "evidence": "tests/diagnostics-regression.test.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 163,
     "action": "self",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 167,
     "action": "duplicate",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/catalog",
+    "method": "POST intent=duplicate",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 173,
     "action": "new_same_author",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/catalog",
+    "method": "POST intent=same-author",
+    "evidence": "app/lib/admin.server.ts; tests/admin.test.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 185,
     "action": "duplicate_helper",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 202,
     "action": "regenerate",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/catalog; /api/admin-media; /api/editor",
+    "method": "GET owned file and POST derivative/processing status",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 217,
     "action": "regenerate_internal",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 248,
     "action": "save",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/api/editor; /api/uploads/:op/:id?",
+    "method": "POST staged metadata/files/publication",
+    "evidence": "tests/uploads.test.ts; tests/e2e/editor.spec.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 252,
     "action": "save_internal",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 504,
     "action": "remove_download_ajax",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/api/editor",
+    "method": "POST intent=remove-file",
+    "evidence": "tests/maintenance.test.ts"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 514,
     "action": "add_current_product_problems_to_flash",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 527,
     "action": "do_download_mp3_from_url",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 541,
     "action": "get_temp_file_no_extension",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 545,
     "action": "do_download_pdf_from_url",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 555,
     "action": "download",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 563,
     "action": "save_local_file_as_upload_image",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 579,
     "action": "add_download_from_url",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/products_controller.rb",
     "line": 588,
     "action": "add_download_from_local_file",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/admin/tags_controller.rb",
     "line": 3,
     "action": "index",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/tags",
+    "method": "GET or POST intent=list",
+    "evidence": "tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/tags_controller.rb",
     "line": 8,
     "action": "alphabetize_children",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/tags",
+    "method": "GET or POST intent=alphabetize",
+    "evidence": "tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/tags_controller.rb",
     "line": 16,
     "action": "list",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/tags",
+    "method": "GET or POST intent=list",
+    "evidence": "tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/tags_controller.rb",
     "line": 38,
     "action": "update_tag_rank",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/tags",
+    "method": "GET or POST intent=save",
+    "evidence": "tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/tags_controller.rb",
     "line": 52,
     "action": "create",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/tags",
+    "method": "GET or POST intent=save",
+    "evidence": "tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/tags_controller.rb",
     "line": 65,
     "action": "update",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/tags",
+    "method": "GET or POST intent=save",
+    "evidence": "tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/tags_controller.rb",
     "line": 84,
     "action": "destroy",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/tags",
+    "method": "GET or POST intent=delete",
+    "evidence": "tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/users_controller.rb",
     "line": 13,
     "action": "index",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/users",
+    "method": "GET/POST account role/profile controls",
+    "evidence": "tests/e2e/accounts.spec.ts; tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/users_controller.rb",
     "line": 17,
     "action": "list",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/users",
+    "method": "GET/POST account role/profile controls",
+    "evidence": "tests/e2e/accounts.spec.ts; tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/users_controller.rb",
     "line": 22,
     "action": "new",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/accounts/new_composer_login then /admin/users",
+    "method": "GET/POST account role/profile controls",
+    "evidence": "tests/e2e/accounts.spec.ts; tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/users_controller.rb",
     "line": 32,
     "action": "edit",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/users",
+    "method": "GET/POST account role/profile controls",
+    "evidence": "tests/e2e/accounts.spec.ts; tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/admin/users_controller.rb",
     "line": 48,
     "action": "destroy",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/users",
+    "method": "POST intent=disable (catalog-preserving deactivation)",
+    "evidence": "tests/e2e/accounts.spec.ts; tests/admin.test.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/content_nodes_controller.rb",
     "line": 6,
     "action": "show_by_name",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/about/:slug",
+    "method": "GET published plain-text content",
+    "evidence": "tests/e2e/admin.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 6,
     "action": "session_object",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 11,
     "action": "wishlist",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/music/wishlist",
+    "method": "GET",
+    "evidence": "tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 16,
     "action": "add_to_wishlist",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/music/wishlist",
+    "method": "POST intent=add",
+    "evidence": "tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 31,
     "action": "remove_wishlist_item",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/music/wishlist",
+    "method": "POST intent=remove",
+    "evidence": "tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 37,
     "action": "session_id",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 44,
     "action": "session_rand",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 49,
     "action": "session_ip",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 53,
     "action": "look_for_recent_comment",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 65,
     "action": "session_info",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 69,
     "action": "check_if_out_of_space",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 77,
     "action": "competition",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/competition; /sheet_music_competition",
+    "method": "GET",
+    "evidence": "tests/e2e/community.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 96,
     "action": "competition_results",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/competition/results",
+    "method": "GET",
+    "evidence": "tests/community.test.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 102,
     "action": "add_comment_competition",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/competition",
+    "method": "POST",
+    "evidence": "tests/community.test.ts; tests/e2e/community.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 117,
     "action": "add_comment",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/music/comment/:id",
+    "method": "POST",
+    "evidence": "tests/e2e/community.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 132,
     "action": "is_spam_comment?",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 142,
     "action": "add_comment_helper",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 192,
     "action": "product_matches",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 200,
     "action": "redirect_to_original_url",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/music/redirect_to_original_url/:code",
+    "method": "GET",
+    "evidence": "app/routes/statistics.tsx; tests/community.test.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 204,
     "action": "redirect_to_original_url_v",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/music/redirect_to_original_url/:code",
+    "method": "GET referral tracking",
+    "evidence": "app/routes/statistics.tsx; tests/community.test.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 209,
     "action": "redirect_to_original_url_helper",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 229,
     "action": "redirect_to_tag",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/:category",
+    "method": "GET direct category links",
+    "evidence": "tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 234,
     "action": "render_404_with_search_field",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 240,
     "action": "show",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/song/:code; /s/:code; /music/show/:code",
+    "method": "GET",
+    "evidence": "tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 287,
     "action": "filter_by_current_main_tag",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 303,
     "action": "change_global_filter",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/search?type=:type",
+    "method": "GET explicit URL state and sticky cookie",
+    "evidence": "tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 314,
     "action": "render_home",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 332,
     "action": "render_cached_if_exists",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 349,
     "action": "render_and_save_to_cache",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 363,
     "action": "show_by_tags",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/music/show_by_tags/:tag; /search?tag=:slugs",
+    "method": "GET",
+    "evidence": "tests/search.test.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 462,
     "action": "get_product_alpha_tag_ids",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 466,
     "action": "setup_alpha_tag_sizes",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 483,
     "action": "rand_for_product",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 496,
     "action": "randomize_but_keep_titles_together",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 510,
     "action": "download_file",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/files/:id?download=1; /music/download_file/:id",
+    "method": "GET",
+    "evidence": "tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 515,
     "action": "inline_download_file",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/files/:id; /music/inline_download_file/:id",
+    "method": "GET",
+    "evidence": "tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 519,
     "action": "ambiguous_download",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/music/ambiguous_download/:id",
+    "method": "GET compatible direct file delivery",
+    "evidence": "app/routes/files.ts; tests/review-regressions.test.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 523,
     "action": "not_a_bot",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 565,
     "action": "logged_in_anytype_user?",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 569,
     "action": "download_helper",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 595,
     "action": "index",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/all; /music/index",
+    "method": "GET",
+    "evidence": "tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 617,
     "action": "most_recently_added",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/music/most_recently_added",
+    "method": "GET",
+    "evidence": "tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 629,
     "action": "look_for_exact_matching_tags",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 645,
     "action": "composer_all_song_stats",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/music/composer_all_song_stats/:id",
+    "method": "GET",
+    "evidence": "tests/e2e/community.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 651,
     "action": "all_songs_with_strings",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 664,
     "action": "all_songs_with_strings_non_memoized",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 673,
     "action": "search",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/search; /music/search; /api/search",
+    "method": "GET",
+    "evidence": "tests/search.test.ts; tests/e2e/discovery.spec.ts"
   },
   {
     "source": "app/controllers/music_controller.rb",
     "line": 792,
     "action": "paginate_and_filter",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/questions_controller.rb",
     "line": 4,
     "action": "index",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/questions/faq",
+    "method": "GET",
+    "evidence": "tests/e2e/admin.spec.ts; app/routes/content.tsx"
   },
   {
     "source": "app/controllers/questions_controller.rb",
     "line": 8,
     "action": "faq",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/questions/faq",
+    "method": "GET",
+    "evidence": "tests/e2e/admin.spec.ts; app/routes/content.tsx"
   },
   {
     "source": "app/controllers/questions_controller.rb",
     "line": 18,
     "action": "ask",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/questions/ask",
+    "method": "GET",
+    "evidence": "tests/e2e/admin.spec.ts; app/routes/content.tsx"
   },
   {
     "source": "app/controllers/questions_controller.rb",
     "line": 33,
     "action": "generate_random_minimum_1",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/questions_controller.rb",
     "line": 37,
     "action": "create_faq",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/admin/pages",
+    "method": "POST administrator FAQ editing / private contact capture",
+    "evidence": "tests/e2e/admin.spec.ts; app/routes/content.tsx"
   },
   {
     "source": "app/controllers/questions_controller.rb",
     "line": 46,
     "action": "is_spam_comment?",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/questions_controller.rb",
     "line": 51,
     "action": "send_question",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/questions/ask",
+    "method": "POST administrator FAQ editing / private contact capture",
+    "evidence": "tests/e2e/admin.spec.ts; app/routes/content.tsx"
   },
   {
     "source": "app/controllers/substruct_application_controller.rb",
     "line": 5,
     "action": "redirect_to_sacredsheetmusic",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/substruct_application_controller.rb",
     "line": 15,
     "action": "set_substruct_view_defaults",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/substruct_application_controller.rb",
     "line": 30,
     "action": "get_nav_tags",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/youtube_edl_controller.rb",
     "line": 6,
     "action": "combine_arrays",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   },
   {
     "source": "app/controllers/youtube_edl_controller.rb",
     "line": 20,
     "action": "control_youtube",
-    "status": "Workflow mapped in feature-parity.md",
-    "replacement": "docs/feature-parity.md"
+    "status": "Workflow implemented; preview restrictions in feature register",
+    "replacement": "/youtube_edl/control_youtube; /youtube_skips",
+    "method": "GET repeated legacy parameters or accessible input form",
+    "evidence": "tests/admin.test.ts; app/lib/playback.ts"
   },
   {
     "source": "app/controllers/youtube_edl_controller.rb",
     "line": 31,
     "action": "translate_string_to_seconds",
-    "status": "Internal helper replaced by bounded services; no public dispatch",
-    "replacement": "docs/feature-parity.md"
+    "status": "Internal helper replaced; not independently routable",
+    "replacement": "app/lib/*.server.ts or component internals",
+    "method": "No generic dispatch",
+    "evidence": "docs/feature-parity.md"
   }
 ]

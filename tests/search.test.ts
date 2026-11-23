@@ -67,3 +67,18 @@ describe('indexed catalog search', () => {
     expect(new Set([...first.items, ...second.items].map((x) => x.id)).size).toBe(60);
   });
 });
+
+it('handles literal long search titles beyond the D1 LIKE-pattern limit', async () => {
+  const title = 'Morning Light An Original Christmas Arrangement For A Peaceful Choir';
+  db.sqlite.prepare('UPDATE arrangements SET title=? WHERE id=?').run(title, 'a');
+  await reindexArrangement(db.env, 'a');
+  expect((await search(title)).items.map((x) => x.id)).toEqual(['a']);
+  const queries = [] as string[];
+  const prepare = db.env.DB.prepare.bind(db.env.DB);
+  db.env.DB.prepare = ((sql: string) => {
+    queries.push(sql);
+    return prepare(sql);
+  }) as typeof db.env.DB.prepare;
+  await search(title);
+  expect(queries.some((sql) => /\bLIKE\s+\?/i.test(sql))).toBe(false);
+});

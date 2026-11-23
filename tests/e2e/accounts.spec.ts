@@ -54,6 +54,7 @@ test('one-time password recovery changes the credential and rejects token reuse'
   page,
   baseURL,
 }) => {
+  test.skip(!!process.env.PREVIEW_URL, 'Recovery fixture reads the isolated local database.');
   const key = 'recovery' + Date.now().toString(36);
   const target = key + '@example.invalid';
   const signup = await page.request.post('/api/auth/sign-up/email', {
@@ -107,4 +108,38 @@ test('one-time password recovery changes the credential and rejects token reuse'
   await page.getByLabel('Password', { exact: true }).fill('NewSampleMusic!2026');
   await page.getByRole('button', { name: 'Log in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Composer workspace' })).toBeVisible();
+});
+test('changing a password preserves the current login and revokes the other session', async ({
+  page,
+  baseURL,
+  browser,
+}) => {
+  const key = 'password' + Date.now().toString(36);
+  const original = 'SampleOriginal!2026';
+  const next = 'SampleChanged!2026';
+  await page.request.post('/api/auth/sign-up/email', {
+    headers: { Origin: baseURL! },
+    data: {
+      username: key,
+      name: 'Password ' + key,
+      email: key + '@example.invalid',
+      password: original,
+    },
+  });
+  const other = await browser.newContext();
+  const otherPage = await other.newPage();
+  await otherPage.request.post(baseURL + '/api/auth/sign-in/username', {
+    headers: { Origin: baseURL! },
+    data: { username: key, password: original },
+  });
+  await page.goto('/accounts/edit_composer_login');
+  await page.getByLabel('Current password', { exact: true }).fill(original);
+  await page.getByLabel('New password', { exact: true }).fill(next);
+  await page.getByRole('button', { name: 'Change password', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Password changed');
+  await page.goto('/admin');
+  await expect(page.getByRole('heading', { name: 'Composer workspace' })).toBeVisible();
+  await otherPage.goto(baseURL + '/admin');
+  await expect(otherPage.getByRole('heading', { name: 'Composer login' })).toBeVisible();
+  await other.close();
 });

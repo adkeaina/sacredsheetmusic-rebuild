@@ -22,9 +22,10 @@ type Profile = {
   private_email: string;
 };
 export async function loader({ request, params, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const mode = params.mode || 'login';
-  const viewer = await getViewer(request, env);
+  if (mode === 'welcome') return redirect('/admin');
+  const viewer = await getViewer(request, env, authState);
   if (mode === 'edit_composer_login' && !viewer) return redirect('/accounts/login');
   if (mode === 'login' && viewer) return redirect('/admin');
   const profile = viewer?.composerId
@@ -43,7 +44,7 @@ export async function loader({ request, params, context }: LoaderFunctionArgs) {
 }
 export async function action({ request, params, context }: ActionFunctionArgs) {
   requireSameOrigin(request);
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const mode = params.mode || 'login';
   await requestLimit(env, request, 'account:' + mode, 20);
   const form = await request.formData();
@@ -117,20 +118,26 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
       };
     }
     if (mode === 'edit_composer_login') {
-      const viewer = await requireViewer(request, env);
+      const viewer = await requireViewer(request, env, authState);
       if (!viewer.composerId) return { error: 'This login does not have a composer profile.' };
       if (form.get('intent') === 'password') {
-        await auth.api.changePassword({
+        const changed = await auth.api.changePassword({
           headers: request.headers,
           body: {
             currentPassword: String(form.get('current_password') || ''),
             newPassword: String(form.get('new_password') || ''),
             revokeOtherSessions: true,
           },
+          asResponse: true,
         });
-        return {
-          success: 'Password changed. Other sessions have been signed out.',
-        };
+        if (!changed.ok) {
+          const failure = (await changed.json()) as { message?: string };
+          return data({ error: failure.message || 'Password change failed.' }, { status: 400 });
+        }
+        return data(
+          { success: 'Password changed. Other sessions have been signed out.' },
+          { headers: changed.headers },
+        );
       }
       const name = String(form.get('name') || '').trim();
       if (name.length < 2 || name.length > 100)

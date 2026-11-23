@@ -2,7 +2,9 @@ import { existsSync } from 'node:fs';
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: 'tests/e2e',
-  timeout: 20000,
+  outputDir: process.env.PREVIEW_URL ? 'test-results/remote' : 'test-results/local',
+  globalSetup: './tests/e2e/setup.ts',
+  timeout: process.env.PREVIEW_URL ? 90000 : 20000,
   expect: { timeout: 6000 },
   workers: 1,
   use: {

@@ -1,0 +1,13 @@
+CREATE TABLE storage_objects(storage_key TEXT PRIMARY KEY,size INTEGER NOT NULL,charged INTEGER NOT NULL DEFAULT 0,state TEXT NOT NULL DEFAULT 'active',claimed_at INTEGER NOT NULL DEFAULT 0);
+INSERT INTO storage_objects(storage_key,size,charged) SELECT storage_key,max(size),1 FROM files WHERE storage_key LIKE 'uploads/%' GROUP BY storage_key;
+UPDATE storage_quota SET used=(SELECT COALESCE(sum(size),0) FROM storage_objects WHERE charged=1 AND state!='deleted') WHERE id='preview';
+CREATE TABLE arrangement_tag_selections(arrangement_id TEXT NOT NULL REFERENCES arrangements(id) ON DELETE CASCADE,tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,PRIMARY KEY(arrangement_id,tag_id));
+INSERT INTO arrangement_tag_selections SELECT at.arrangement_id,at.tag_id FROM arrangement_tags at WHERE NOT EXISTS(SELECT 1 FROM tags t JOIN arrangement_tags child ON child.tag_id=t.id AND child.arrangement_id=at.arrangement_id WHERE t.parent_id=at.tag_id);
+CREATE TABLE composer_claims(composer_id TEXT PRIMARY KEY REFERENCES composers(id),user_id TEXT NOT NULL UNIQUE REFERENCES users(id));
+CREATE TABLE composer_aliases(slug TEXT PRIMARY KEY,composer_id TEXT NOT NULL REFERENCES composers(id) ON DELETE CASCADE);
+CREATE TABLE tag_aliases(slug TEXT PRIMARY KEY,tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE);
+CREATE INDEX comments_arrangement ON comments(arrangement_id,approved);
+CREATE INDEX credits_composer ON credits(composer_id,arrangement_id);
+ALTER TABLE processing_jobs ADD COLUMN file_id TEXT REFERENCES files(id) ON DELETE SET NULL;
+ALTER TABLE upload_tickets ADD COLUMN parent_id TEXT REFERENCES files(id) ON DELETE SET NULL;
+ALTER TABLE files ADD COLUMN content_hash TEXT NOT NULL DEFAULT '';

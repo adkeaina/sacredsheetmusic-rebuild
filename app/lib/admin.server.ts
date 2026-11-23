@@ -2,6 +2,7 @@ import type { Viewer } from './types.server';
 import { first, rows, run, audit, type DbEnv } from './db.server';
 import { safeExternalUrl } from './security.server';
 import { reindexArrangement } from './search.server';
+import { enqueueCatalogJob } from './catalog-jobs.server';
 import { enqueueMail } from './mail.server';
 import { adminAreas, fields, type AdminArea } from './admin-shared';
 export { adminAreas, fields } from './admin-shared';
@@ -20,6 +21,74 @@ export async function adminMutation(env: DbEnv, viewer: Viewer, input: Record<st
   const { area, intent } = input;
   if (!adminAreas.includes(area as AdminArea)) throw new Error('Unknown administration area.');
   const id = input.id || crypto.randomUUID();
+  if (area === 'users' && intent === 'disable') {
+    const changed = await run(
+      env,
+      "UPDATE users SET disabled=1 WHERE id=? AND (role!='admin' OR (SELECT count(*) FROM users WHERE role='admin' AND disabled=0)>1)",
+      [id],
+    );
+    if (!changed.meta.changes) throw new Error('Keep at least one active administrator.');
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM sessions WHERE user_id=?').bind(id),
+      env.DB.prepare('UPDATE composers SET user_id=NULL WHERE user_id=?').bind(id),
+      env.DB.prepare('DELETE FROM composer_claims WHERE user_id=?').bind(id),
+    ]);
+    await audit(env, viewer.userId, 'user.disabled', id);
+    return { id };
+  }
+  if (area === 'composers' && intent === 'link') {
+    const user = await first<{ id: string; email: string }>(
+      env,
+      'SELECT id,email FROM users WHERE id=?',
+      [input.userId],
+    );
+    const target = await first<{ id: string; name: string; user_id: string | null }>(
+      env,
+      'SELECT id,name,user_id FROM composers WHERE id=?',
+      [id],
+    );
+    if (!user || !target) throw new Error('Choose an existing login and composer.');
+    if (target.user_id && target.user_id !== user.id)
+      throw new Error('This composer already belongs to another login.');
+    if (target.user_id === user.id) return { id };
+    const old = await first<{ id: string; slug: string }>(
+      env,
+      'SELECT id,slug FROM composers WHERE user_id=?',
+      [user.id],
+    );
+    const statements = [
+      env.DB.prepare('INSERT INTO composer_claims(composer_id,user_id) VALUES(?,?)').bind(
+        id,
+        user.id,
+      ),
+      env.DB.prepare('UPDATE composers SET user_id=NULL WHERE user_id=?').bind(user.id),
+      env.DB.prepare('UPDATE composers SET user_id=?,private_email=? WHERE id=?').bind(
+        user.id,
+        user.email,
+        id,
+      ),
+      env.DB.prepare('UPDATE users SET name=? WHERE id=?').bind(target.name, user.id),
+      env.DB.prepare('DELETE FROM sessions WHERE user_id=?').bind(user.id),
+    ];
+    if (old) {
+      statements.push(
+        env.DB.prepare('UPDATE arrangements SET composer_id=? WHERE composer_id=?').bind(
+          id,
+          old.id,
+        ),
+        env.DB.prepare(
+          'INSERT OR IGNORE INTO credits(arrangement_id,composer_id) SELECT arrangement_id,? FROM credits WHERE composer_id=?',
+        ).bind(id, old.id),
+        env.DB.prepare('DELETE FROM credits WHERE composer_id=?').bind(old.id),
+        env.DB.prepare(
+          'INSERT OR REPLACE INTO composer_aliases(slug,composer_id) VALUES(?,?)',
+        ).bind(old.slug, id),
+      );
+    }
+    await env.DB.batch(statements);
+    await audit(env, viewer.userId, 'composer.link', id);
+    return { id, jobId: await enqueueCatalogJob(env) };
+  }
   if (intent === 'alphabetize' && area === 'tags') {
     const tags = await rows<{ id: string }>(
       env,
@@ -66,7 +135,19 @@ export async function adminMutation(env: DbEnv, viewer: Viewer, input: Record<st
         [target, target, id],
       );
     }
-    await run(env, 'INSERT INTO credits(arrangement_id,composer_id) VALUES(?,?)', [
+    if (intent === 'duplicate') {
+      await run(
+        env,
+        'INSERT INTO arrangement_tag_selections SELECT ?,tag_id FROM arrangement_tag_selections WHERE arrangement_id=?',
+        [target, id],
+      );
+      await run(
+        env,
+        'INSERT OR IGNORE INTO credits SELECT ?,composer_id FROM credits WHERE arrangement_id=?',
+        [target, id],
+      );
+    }
+    await run(env, 'INSERT OR IGNORE INTO credits(arrangement_id,composer_id) VALUES(?,?)', [
       target,
       a.composer_id,
     ]);
@@ -123,7 +204,7 @@ export async function adminMutation(env: DbEnv, viewer: Viewer, input: Record<st
       );
       values[f] = ['rank', 'available_at', 'opens_at', 'closes_at', 'year'].includes(f)
         ? integer(value)
-        : ['published', 'winner'].includes(f)
+        : ['published', 'winner', 'disabled'].includes(f)
           ? value === '1'
             ? 1
             : 0
@@ -158,9 +239,13 @@ export async function adminMutation(env: DbEnv, viewer: Viewer, input: Record<st
       const old = await first<{ role: string }>(env, 'SELECT role FROM users WHERE id=?', [id]);
       const count = await first<{ n: number }>(
         env,
-        "SELECT count(*) n FROM users WHERE role='admin'",
+        "SELECT count(*) n FROM users WHERE role='admin' AND disabled=0",
       );
-      if (old?.role === 'admin' && input.role !== 'admin' && (count?.n || 0) < 2)
+      if (
+        old?.role === 'admin' &&
+        (input.role !== 'admin' || input.disabled === '1') &&
+        (count?.n || 0) < 2
+      )
         throw new Error('Keep at least one administrator.');
     }
     if (area === 'competitions' && Number(values.closes_at) <= Number(values.opens_at))
@@ -171,6 +256,18 @@ export async function adminMutation(env: DbEnv, viewer: Viewer, input: Record<st
     if (area === 'preferences' && !input.key?.trim())
       throw new Error('Preference key is required.');
     const table = area === 'catalog' ? 'arrangements' : area;
+    const before =
+      area === 'tags' || area === 'composers'
+        ? await first<{ slug: string }>(env, `SELECT slug FROM ${area} WHERE id=?`, [id])
+        : null;
+    if (before && before.slug !== input.slug)
+      await run(
+        env,
+        area === 'tags'
+          ? 'INSERT OR REPLACE INTO tag_aliases(slug,tag_id) VALUES(?,?)'
+          : 'INSERT OR REPLACE INTO composer_aliases(slug,composer_id) VALUES(?,?)',
+        [before.slug, id],
+      );
     const existing = await first(
       env,
       `SELECT 1 FROM ${table} WHERE ${area === 'preferences' ? 'key' : 'id'}=?`,
@@ -198,19 +295,14 @@ export async function adminMutation(env: DbEnv, viewer: Viewer, input: Record<st
       await run(env, 'DELETE FROM sessions WHERE user_id=?', [id]);
     }
     if (area === 'catalog') await reindexArrangement(env, id);
-    if (area === 'tags' || area === 'composers') {
-      const affected = await rows<{ id: string }>(
-        env,
-        area === 'tags'
-          ? 'SELECT arrangement_id id FROM arrangement_tags WHERE tag_id=? LIMIT 100'
-          : 'SELECT id FROM arrangements WHERE composer_id=? LIMIT 100',
-        [id],
-      );
-      for (const a of affected) await reindexArrangement(env, a.id);
-    }
   } else throw new Error('Unknown operation.');
   await audit(env, viewer.userId, area + '.' + intent, id);
-  return { id };
+  return {
+    id,
+    ...(['tags', 'composers'].includes(area) && ['save', 'delete'].includes(intent)
+      ? { jobId: await enqueueCatalogJob(env) }
+      : {}),
+  };
 }
 export function validateImportUrl(value: string) {
   const u = new URL(value);
@@ -249,4 +341,13 @@ export async function diagnostics(env: DbEnv) {
     quota: await first(env, 'SELECT used,reserved,max_bytes FROM storage_quota'),
     jobs: await rows(env, 'SELECT * FROM processing_jobs ORDER BY created_at DESC LIMIT 50'),
   };
+}
+
+export function validateTrustedImport(value: string, hosts: string[]) {
+  const url = validateImportUrl(value);
+  if (!hosts.map((h) => h.trim().toLowerCase()).includes(url.hostname.toLowerCase()))
+    throw new Error(
+      'This import hostname is not a trusted source. Configure import_trusted_hosts in administrator Preferences first.',
+    );
+  return url;
 }

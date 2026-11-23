@@ -14,7 +14,7 @@ import { visitorSession } from '../lib/visitor.server';
 import { privateKey, requireSameOrigin, requestLimit } from '../lib/security.server';
 import { addVote, competitionResults } from '../lib/community.server';
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const url = new URL(request.url);
   const contests = await rows<{
     id: string;
@@ -25,7 +25,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   }>(env, 'SELECT * FROM competitions ORDER BY opens_at DESC');
   const contest = contests.find((c) => c.id === url.searchParams.get('contest')) || contests[0];
   const visitor = await visitorSession(request, env);
-  const viewer = await getViewer(request, env);
+  const viewer = await getViewer(request, env, authState);
   const household = await privateKey(
     env.HOUSEHOLD_SECRET,
     (contest?.id || '') + ':' + (request.headers.get('CF-Connecting-IP') || 'local'),
@@ -62,12 +62,12 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   );
 }
 export async function action({ request, context }: ActionFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   requireSameOrigin(request);
   await requestLimit(env, request, 'competition', 50);
   const f = await request.formData();
   const visitor = await visitorSession(request, env);
-  const viewer = await getViewer(request, env);
+  const viewer = await getViewer(request, env, authState);
   try {
     if (
       f.get('website') ||
@@ -220,7 +220,7 @@ export default function Competition() {
                           Overall rating
                           <select name="rating">
                             <option value="">No rating</option>
-                            {[5, 4, 3, 2, 1].map((n) => (
+                            {[5, 4.5, 4, 3, 2, 1].map((n) => (
                               <option key={n} value={n}>
                                 {n} / 5
                               </option>

@@ -6,8 +6,9 @@ import {
   useActionData,
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
+  useRevalidator,
 } from 'react-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cloudflareContext } from '../lib/context.server';
 import { requireAdmin } from '../lib/auth.server';
 import { rows, first, audit } from '../lib/db.server';
@@ -15,6 +16,8 @@ import { adminAreas } from '../lib/admin-shared';
 import { fields, adminMutation, diagnostics } from '../lib/admin.server';
 import { requireSameOrigin, consumeRateLimit } from '../lib/security.server';
 import { collectFiles } from '../lib/maintenance.server';
+import { inspectStoredFiles } from '../lib/diagnostics.server';
+import { processCatalogJob, enqueueCatalogJob } from '../lib/catalog-jobs.server';
 import { reindexArrangement } from '../lib/search.server';
 import { removeFile } from '../lib/storage.server';
 const aliases: Record<string, string> = {
@@ -36,8 +39,8 @@ function areaFor(params: Record<string, string | undefined>, request: Request) {
   );
 }
 export async function loader({ request, params, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
-  await requireAdmin(request, env);
+  const { env, authState } = context.get(cloudflareContext);
+  await requireAdmin(request, env, authState);
   const area = areaFor(params, request);
   if (!adminAreas.includes(area as any)) throw new Response('Tool not found', { status: 404 });
   const url = new URL(request.url);
@@ -59,11 +62,22 @@ export async function loader({ request, params, context }: LoaderFunctionArgs) {
                 ? 'title'
                 : 'name';
     const table = area === 'catalog' ? 'arrangements' : area === 'audit' ? 'audit_events' : area;
-    const selection = area === 'users' ? 'id,name,email,role,username,created_at' : '*';
+    const selection: string =
+      (
+        {
+          users: 'id,name,email,role,disabled,username,created_at',
+          catalog: 'id,title,voicing,published,available_at,winner,composer_id',
+          pages: 'id,title,slug,section,rank,published',
+          composers: 'id,name,slug,private_email,user_id',
+          tags: 'id,name,slug,type,parent_id,rank',
+          files: 'id,arrangement_id,filename,size,content_type,state,rank',
+          contacts: 'id,name,email,status,created_at',
+        } as Record<string, string>
+      )[area] || '*';
     items = await rows(
       env,
-      `SELECT ${selection} FROM ${table} WHERE ${column} LIKE ? ORDER BY ${column} LIMIT 100 OFFSET ?`,
-      ['%' + q + '%', (page - 1) * 100],
+      `SELECT ${selection} FROM ${table} WHERE instr(lower(${column}),lower(?))>0 ORDER BY ${column} LIMIT 20 OFFSET ?`,
+      [q, (page - 1) * 20],
     );
   }
   let selected: Record<string, any> | null = null;
@@ -71,7 +85,7 @@ export async function loader({ request, params, context }: LoaderFunctionArgs) {
     const table = area === 'catalog' ? 'arrangements' : area;
     selected = await first(
       env,
-      `SELECT ${area === 'users' ? 'id,name,role' : '*'} FROM ${table} WHERE ${area === 'preferences' ? 'key' : 'id'}=?`,
+      `SELECT ${area === 'users' ? 'id,name,role,disabled' : '*'} FROM ${table} WHERE ${area === 'preferences' ? 'key' : 'id'}=?`,
       [id],
     );
   }
@@ -94,18 +108,26 @@ export async function loader({ request, params, context }: LoaderFunctionArgs) {
   };
 }
 export async function action({ request, params, context }: ActionFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   requireSameOrigin(request);
-  const viewer = await requireAdmin(request, env);
+  const viewer = await requireAdmin(request, env, authState);
   await consumeRateLimit(env, 'admin:' + viewer.userId, 200);
   const f = await request.formData();
   const body = Object.fromEntries([...f.entries()].map(([k, v]) => [k, String(v)]));
   body.area = areaFor(params, request);
   try {
+    if (body.intent === 'inspect') {
+      const report = await inspectStoredFiles(env, body.cursor || '');
+      await audit(env, viewer.userId, 'files.inspected', report.cursor || 'complete');
+      return { success: 'Storage inspection completed for this batch.', inspection: report };
+    }
+    if (body.intent === 'job') {
+      return Response.json({ jobId: body.jobId, ...(await processCatalogJob(env, body.jobId)) });
+    }
     if (body.intent === 'collect') {
       const result = await collectFiles(env);
       await audit(env, viewer.userId, 'maintenance.collect', 'files');
-      return {
+      const value = {
         success:
           'Maintenance completed: ' +
           result.expired +
@@ -113,22 +135,13 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
           result.collected +
           ' file keys checked.',
       };
+      if (request.headers.get('Accept')?.includes('application/json')) return Response.json(value);
+      return value;
     }
     if (body.intent === 'reindex') {
-      const items = await rows<{ id: string }>(
-        env,
-        'SELECT id FROM arrangements WHERE id>? ORDER BY id LIMIT 50',
-        [body.cursor || ''],
-      );
-      for (const a of items) await reindexArrangement(env, a.id);
-      await audit(env, viewer.userId, 'maintenance.reindex', items.at(-1)?.id || 'complete');
-      return {
-        success:
-          items.length === 50
-            ? 'Reindexed 50 songs. Continue with the next batch.'
-            : 'Search index rebuild completed.',
-        cursor: items.length === 50 ? items.at(-1)!.id : '',
-      };
+      const jobId = await enqueueCatalogJob(env);
+      await audit(env, viewer.userId, 'maintenance.reindex', jobId);
+      return { success: 'Catalog refresh queued.', jobId };
     }
     if (body.area === 'files' && body.intent === 'remove') {
       await removeFile(env, viewer, body.id);
@@ -158,6 +171,7 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
     const result = await adminMutation(env, viewer, body);
     if ('redirect' in result && result.redirect) return redirect(result.redirect);
     return {
+      ...('jobId' in result ? { jobId: result.jobId } : {}),
       success:
         body.area === 'messages'
           ? 'Messages captured privately. No email was sent.'
@@ -177,8 +191,50 @@ export default function Administration() {
     error?: string;
     success?: string;
     cursor?: string;
+    jobId?: string;
+    done?: boolean;
+    inspection?: { missing: unknown[]; duplicates: unknown[]; cursor: string; done: boolean };
   }>();
   const [status, setStatus] = useState('');
+  const revalidator = useRevalidator();
+  useEffect(() => {
+    if (!result?.jobId) return;
+    let stopped = false;
+    void (async () => {
+      try {
+        let done = false;
+        while (!done && !stopped) {
+          const body = new FormData();
+          body.set('intent', 'job');
+          body.set('jobId', result.jobId!);
+          const response = await fetch('/admin/diagnostics', {
+            method: 'POST',
+            body,
+            headers: { Accept: 'application/json' },
+          });
+          const value = (await response.json()) as {
+            done?: boolean;
+            error?: string;
+            busy?: boolean;
+          };
+          if (!response.ok || value.error)
+            throw new Error(value.error || 'Catalog refresh paused.');
+          done = !!value.done;
+          setStatus(
+            done ? 'Catalog refresh completed.' : 'Refreshing catalog categories and search…',
+          );
+          if (value.busy) await new Promise((r) => setTimeout(r, 250));
+        }
+        if (done && !stopped) void revalidator.revalidate();
+      } catch (error) {
+        if (!stopped)
+          setStatus(String(error) + ' Resume the pending catalog job from Diagnostics.');
+      }
+    })();
+    return () => {
+      stopped = true;
+    };
+  }, [result?.jobId]);
   async function regenerate(id: string) {
     try {
       setStatus('Rendering preview in this browser…');
@@ -202,6 +258,7 @@ export default function Administration() {
           contentType: image.type,
           size: image.size,
           kind: 'preview',
+          parentId: a.fileId,
         }),
       }).then((r) => r.json())) as any;
       if (ticket.error) throw new Error(ticket.error);
@@ -216,6 +273,12 @@ export default function Administration() {
         body: '{}',
       });
       if (!complete.ok) throw new Error('Preview finalization failed.');
+      const processed = await fetch('/api/editor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: 'processing', id, fileId: a.fileId, status: 'complete' }),
+      });
+      if (!processed.ok) throw new Error('Could not save processing status.');
       setStatus('Preview regenerated.');
     } catch (error) {
       setStatus(String(error));
@@ -240,11 +303,33 @@ export default function Administration() {
           {result.error}
         </p>
       )}
-      {result?.success && <p role="status">{result.success}</p>}
-      {status && <p role="status">{status}</p>}
+      {(result?.success || status) && (
+        <p role="status">{[result?.success, status].filter(Boolean).join(' ')}</p>
+      )}
       {area === 'diagnostics' ? (
         <>
           <h2>Catalog checks</h2>
+          {((report?.jobs as { id: string; type: string; status: string }[]) || [])
+            .filter((j) => j.type === 'catalog-sync' && j.status !== 'complete')
+            .map((j) => (
+              <Form method="post" key={j.id}>
+                <input type="hidden" name="intent" value="job" />
+                <input type="hidden" name="jobId" value={j.id} />
+                <button>Resume catalog refresh {j.id.slice(0, 8)}</button>
+              </Form>
+            ))}
+          {result?.inspection && (
+            <pre className="diagnostic-report">{JSON.stringify(result.inspection, null, 2)}</pre>
+          )}
+          <Form method="post">
+            <input type="hidden" name="intent" value="inspect" />
+            <input type="hidden" name="cursor" value={result?.inspection?.cursor || ''} />
+            <button>
+              {result?.inspection?.cursor
+                ? 'Continue storage inspection'
+                : 'Inspect stored files and duplicate downloads'}
+            </button>
+          </Form>
           <pre className="diagnostic-report">{JSON.stringify(report, null, 2)}</pre>
           <Form method="post">
             <input type="hidden" name="intent" value="collect" />
@@ -256,7 +341,7 @@ export default function Administration() {
             <button>
               {result?.cursor
                 ? 'Continue search index rebuild'
-                : 'Rebuild search index (50 songs per batch)'}
+                : 'Rebuild categories and search index'}
             </button>
           </Form>
         </>
@@ -362,6 +447,14 @@ export default function Administration() {
                           </button>
                         </>
                       )}
+                      {area === 'users' && !row.disabled && (
+                        <Form method="post">
+                          <input type="hidden" name="id" value={row.id} />
+                          <button name="intent" value="disable">
+                            Disable login
+                          </button>
+                        </Form>
+                      )}
                       {area === 'files' && (
                         <>
                           <a href={'/files/' + row.id}>Open</a>
@@ -384,13 +477,21 @@ export default function Administration() {
               <Link to={'?q=' + encodeURIComponent(q) + '&page=' + (page - 1)}>Previous</Link>
             )}
             <span>Page {page}</span>
-            {items.length === 100 && (
+            {items.length === 20 && (
               <Link to={'?q=' + encodeURIComponent(q) + '&page=' + (page + 1)}>Next</Link>
             )}
           </nav>
           {fieldNames.length > 0 && (
             <section className="admin-edit">
               <h2>{selected ? 'Edit record' : 'Add record'}</h2>
+              {selected && area === 'contacts' && (
+                <div className="prose">
+                  <p>
+                    {selected.name} · {selected.email}
+                  </p>
+                  <p className="preserve-lines">{selected.message}</p>
+                </div>
+              )}
               {!selected && ['catalog', 'users', 'files', 'contacts'].includes(area) ? (
                 <p>
                   Select an existing record above. New music and accounts use their dedicated forms.
@@ -478,6 +579,22 @@ export default function Administration() {
                   </button>
                 </Form>
               )}
+              {selected && area === 'composers' && (
+                <Form method="post" className="stacked-form">
+                  <input type="hidden" name="id" value={selected.id} />
+                  <label>
+                    Login user ID to link
+                    <input name="userId" required />
+                  </label>
+                  <p>
+                    The existing composer must be unclaimed. The login’s new profile music will move
+                    here; its current sessions will be revoked.
+                  </p>
+                  <button name="intent" value="link">
+                    Link login to this composer
+                  </button>
+                </Form>
+              )}
               {selected && area === 'competitions' && (
                 <Form method="post" className="stacked-form">
                   <input type="hidden" name="id" value={selected.id} />
@@ -499,8 +616,9 @@ export default function Administration() {
             <section>
               <h2>Import a permitted remote file</h2>
               <p>
-                Only public HTTPS destinations are accepted. Redirects and DNS addresses are
-                checked. You must confirm permission and keep attribution.
+                Only trusted public HTTPS destinations are accepted. Remote imports are limited to
+                16 MiB; use the composer uploader for larger files up to 120 MiB. Redirects and DNS
+                addresses are checked. You must confirm permission and keep attribution.
               </p>
               <Form method="post" action="/api/admin-media" className="stacked-form">
                 <label>

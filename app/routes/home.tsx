@@ -3,7 +3,7 @@ import { cloudflareContext } from '../lib/context.server';
 import { queryCatalog } from '../lib/search.server';
 import { MusicList } from '../components/MusicList';
 export async function loader({ context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   const recent = await queryCatalog(env, { q: '', page: 1, seed: 'recent' });
   return {
     recent: recent.items.slice(0, 6),

@@ -3,8 +3,8 @@ import { cloudflareContext } from '../lib/context.server';
 import { getViewer, requireAdmin } from '../lib/auth.server';
 import { rows, first } from '../lib/db.server';
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
-  const viewer = await getViewer(request, env);
+  const { env, authState } = context.get(cloudflareContext);
+  const viewer = await getViewer(request, env, authState);
   if (!viewer) return redirect('/accounts/login');
   const items = await rows<{
     id: string;

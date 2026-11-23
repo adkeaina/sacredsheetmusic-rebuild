@@ -10,10 +10,12 @@ export default [
   route('composer/:slug', 'routes/composer.tsx'),
   route('files/:id', 'routes/files.ts'),
   route('about/:slug', 'routes/content.tsx'),
+  route('questions', 'routes/content.tsx', { id: 'questions-index' }),
   route('questions/ask', 'routes/content.tsx', { id: 'contact' }),
   route('questions/faq', 'routes/content.tsx', { id: 'faq' }),
   route('music/comment/:id', 'routes/comment.tsx'),
   route('music/add_comment/:id', 'routes/comment.tsx', { id: 'comment-alias' }),
+  route('sheet_music_competition', 'routes/competition.tsx', { id: 'source-competition-page' }),
   route('competition', 'routes/competition.tsx'),
   route('competition/results', 'routes/competition.tsx', { id: 'results' }),
   route('music/competition', 'routes/competition.tsx', {
@@ -58,6 +60,7 @@ export default [
     id: 'youtube-source-alias',
   }),
   route('music/show_by_tags/:tag', 'routes/catalog.tsx', { id: 'tags-alias' }),
+  route('music/ambiguous_download/:id', 'routes/files.ts', { id: 'ambiguous-download-alias' }),
   route('music/download_file/:id', 'routes/files.ts', { id: 'download-alias' }),
   route('music/inline_download_file/:id', 'routes/files.ts', {
     id: 'inline-alias',

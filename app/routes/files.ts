@@ -3,23 +3,32 @@ import { cloudflareContext } from '../lib/context.server';
 import { visitorSession } from '../lib/visitor.server';
 import { recordEvent } from '../lib/community.server';
 import { getViewer } from '../lib/auth.server';
+import { filePolicy } from '../lib/file-policy.server';
 import { first } from '../lib/db.server';
 export async function loader({ request, params, context }: LoaderFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
-  const viewer = await getViewer(request, env);
+  const { env, authState } = context.get(cloudflareContext);
+
   const file = await first<{
     storage_key: string;
     filename: string;
     content_type: string;
     size: number;
     published: number;
+    available_at: number;
+    composer_id: string;
     arrangement_id: string;
   }>(
     env,
-    "SELECT f.storage_key,f.filename,f.content_type,f.size,a.published,f.arrangement_id FROM files f JOIN arrangements a ON a.id=f.arrangement_id WHERE f.id=? AND f.state='published' AND ((a.published=1 AND a.available_at<=?) OR a.composer_id=? OR ?='admin')",
-    [params.id || '', Date.now(), viewer?.composerId || '', viewer?.role || ''],
+    "SELECT f.storage_key,f.filename,f.content_type,f.size,a.published,a.available_at,a.composer_id,f.arrangement_id FROM files f JOIN arrangements a ON a.id=f.arrangement_id WHERE f.id=? AND f.state='published'",
+    [params.id || ''],
   );
   if (!file) throw new Response('File not found', { status: 404 });
+  const publicFile = file.published === 1 && file.available_at <= Date.now();
+  if (!publicFile) {
+    const viewer = await getViewer(request, env, authState);
+    if (viewer?.role !== 'admin' && viewer?.composerId !== file.composer_id)
+      throw new Response('File not found', { status: 404 });
+  }
   const range = request.headers.get('Range');
   if (
     range &&
@@ -40,17 +49,17 @@ export async function loader({ request, params, context }: LoaderFunctionArgs) {
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('ETag', object.httpEtag);
   headers.set('Accept-Ranges', 'bytes');
-  headers.set('Cache-Control', file.published ? 'public, max-age=300' : 'private, no-store');
+
   const download =
     new URL(request.url).searchParams.has('download') ||
     new URL(request.url).pathname.includes('/download_file/');
+  const policy = filePolicy(file.content_type, file.published, file.available_at, download);
+  headers.set('Cache-Control', policy.cache);
   headers.set(
     'Content-Disposition',
-    (download ? 'attachment' : 'inline') +
-      "; filename*=UTF-8''" +
-      encodeURIComponent(file.filename),
+    policy.disposition + "; filename*=UTF-8''" + encodeURIComponent(file.filename),
   );
-  if (download && !range && file.published) {
+  if (download && !range && publicFile) {
     const visitor = await visitorSession(request, env);
     await recordEvent(env, file.arrangement_id, 'download', visitor.id);
     if (visitor.header) headers.set('Set-Cookie', visitor.header);

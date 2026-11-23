@@ -10,9 +10,9 @@ import {
   ownedArrangement,
 } from '../lib/storage.server';
 export async function action({ request, context }: ActionFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   requireSameOrigin(request);
-  const viewer = await requireViewer(request, env);
+  const viewer = await requireViewer(request, env, authState);
   await consumeRateLimit(env, 'editor:' + viewer.userId, 100);
   try {
     const body = (await request.json()) as Record<string, any>;
@@ -36,6 +36,31 @@ export async function action({ request, context }: ActionFunctionArgs) {
           ),
         ),
       );
+      return Response.json({ ok: true });
+    }
+    if (body.intent === 'processing') {
+      await ownedArrangement(env, viewer, String(body.id));
+      const file = await env.DB.prepare(
+        "SELECT id FROM files WHERE id=? AND arrangement_id=? AND content_type='application/pdf' AND state='published'",
+      )
+        .bind(String(body.fileId), String(body.id))
+        .first();
+      if (!file) throw new Error('The PDF is unavailable.');
+      if (!['complete', 'failed'].includes(body.status))
+        throw new Error('Invalid processing status.');
+      await env.DB.prepare(
+        "INSERT INTO processing_jobs(id,arrangement_id,file_id,type,status,detail,created_at,updated_at) VALUES(?,?,?,'pdf-preview',?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,detail=excluded.detail,updated_at=excluded.updated_at",
+      )
+        .bind(
+          'pdf-' + body.fileId,
+          String(body.id),
+          String(body.fileId),
+          body.status,
+          String(body.detail || '').slice(0, 1000),
+          Date.now(),
+          Date.now(),
+        )
+        .run();
       return Response.json({ ok: true });
     }
     if (body.intent === 'publish') {

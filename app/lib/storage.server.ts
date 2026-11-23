@@ -9,6 +9,7 @@ export type UploadInput = {
   size: number;
   kind: string;
   arrangementId?: string;
+  parentId?: string;
 };
 const formats: Record<string, string[]> = {
   'application/pdf': ['pdf'],
@@ -45,7 +46,7 @@ export function validateUpload(input: UploadInput) {
   return input;
 }
 export function assertSignature(bytes: Uint8Array, type: string) {
-  const text = new TextDecoder().decode(bytes.slice(0, 64));
+  const text = new TextDecoder().decode(bytes.slice(0, 4096));
   let valid = false;
   switch (type) {
     case 'application/pdf':
@@ -89,7 +90,10 @@ export function assertSignature(bytes: Uint8Array, type: string) {
       valid = text.startsWith('RIFF') && text.slice(8, 12) === 'WEBP';
       break;
     case 'application/vnd.recordare.musicxml+xml':
-      valid = text.trimStart().startsWith('<?xml') || text.trimStart().startsWith('<score-');
+      valid =
+        /^\s*(?:<\?xml[^>]*\?>\s*)?(?:<!DOCTYPE\s+score-(?:partwise|timewise)\s+(?:PUBLIC|SYSTEM)\s+(?:"[^"]*"\s*){1,2}>\s*)?<score-(?:partwise|timewise)(?:\s|>)/.test(
+          text,
+        );
       break;
     case 'application/vnd.recordare.musicxml':
       valid = bytes[0] === 80 && bytes[1] === 75 && bytes[2] === 3 && bytes[3] === 4;
@@ -208,6 +212,7 @@ export async function saveArrangement(env: DbEnv, viewer: Viewer, input: Arrange
       Date.now(),
     ),
     env.DB.prepare('DELETE FROM arrangement_tags WHERE arrangement_id=?').bind(id),
+    env.DB.prepare('DELETE FROM arrangement_tag_selections WHERE arrangement_id=?').bind(id),
     env.DB.prepare('DELETE FROM credits WHERE arrangement_id=?').bind(id),
     env.DB.prepare('INSERT OR IGNORE INTO credits(arrangement_id,composer_id) VALUES(?,?)').bind(
       id,
@@ -232,6 +237,12 @@ export async function saveArrangement(env: DbEnv, viewer: Viewer, input: Arrange
   for (const tag of tags)
     statements.push(
       env.DB.prepare(
+        'INSERT OR IGNORE INTO arrangement_tag_selections(arrangement_id,tag_id) VALUES(?,?)',
+      ).bind(id, tag),
+    );
+  for (const tag of tags)
+    statements.push(
+      env.DB.prepare(
         'WITH RECURSIVE ancestors(id,parent_id) AS (SELECT id,parent_id FROM tags WHERE id=? UNION SELECT t.id,t.parent_id FROM tags t JOIN ancestors a ON a.parent_id=t.id) INSERT OR IGNORE INTO arrangement_tags(arrangement_id,tag_id) SELECT ?,id FROM ancestors',
       ).bind(tag, id),
     );
@@ -247,6 +258,15 @@ export async function publishArrangement(env: DbEnv, viewer: Viewer, id: string,
     voicing: string;
   }>(env, 'SELECT source_url,rights_attested,voicing FROM arrangements WHERE id=?', [id]);
   if (publish) {
+    const processing = await first(
+      env,
+      "SELECT 1 FROM processing_jobs j JOIN files f ON f.id=j.file_id WHERE j.arrangement_id=? AND j.type='pdf-preview' AND j.status!='complete' AND f.state='published' LIMIT 1",
+      [id],
+    );
+    if (processing)
+      throw new Error(
+        'PDF processing is incomplete or failed. Your original file and draft are saved. Retry the preview or remove that file before publishing.',
+      );
     const count = await first<{ n: number }>(
       env,
       "SELECT count(*) AS n FROM files WHERE arrangement_id=? AND state='published' AND kind!='preview'",
@@ -270,6 +290,15 @@ export async function reserveUpload(
   input: UploadInput & { arrangementId: string },
 ) {
   validateUpload(input);
+  if (
+    input.parentId &&
+    !(await first(
+      env,
+      "SELECT 1 FROM files WHERE id=? AND arrangement_id=? AND state='published'",
+      [input.parentId, input.arrangementId],
+    ))
+  )
+    throw new Error('The parent score file is unavailable.');
   await ownedArrangement(env, viewer, input.arrangementId);
   const id = crypto.randomUUID();
   const key = 'uploads/' + viewer.userId + '/' + id + '/' + input.filename;
@@ -283,7 +312,7 @@ export async function reserveUpload(
         `UPDATE storage_quota SET reserved=reserved+? WHERE id='preview' AND used+reserved+?<=max_bytes AND (SELECT COALESCE(sum(size),0) FROM files WHERE owner_id=? AND state!='failed')+(SELECT COALESCE(sum(size),0) FROM upload_tickets WHERE user_id=? AND state='reserved')+?<=1073741824`,
       ).bind(input.size, input.size, viewer.userId, viewer.userId, input.size),
       env.DB.prepare(
-        'INSERT INTO upload_tickets(id,user_id,arrangement_id,storage_key,filename,content_type,size,kind,expires_at,created_at,upload_id) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE changes()=1',
+        'INSERT INTO upload_tickets(id,user_id,arrangement_id,storage_key,filename,content_type,size,kind,expires_at,created_at,upload_id,parent_id) SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE changes()=1',
       ).bind(
         id,
         viewer.userId,
@@ -296,6 +325,7 @@ export async function reserveUpload(
         Date.now() + 3600000,
         Date.now(),
         multipart.uploadId,
+        input.parentId || null,
       ),
     ]);
     if (!result[1].meta.changes)
@@ -321,6 +351,8 @@ export type Ticket = {
   upload_id: string;
   validated: number;
   expires_at: number;
+  parent_id: string | null;
+  reservation_active: number;
 };
 async function getTicket(env: DbEnv, viewer: NonNullable<Viewer>, id: string) {
   const ticket = await first<Ticket>(env, 'SELECT * FROM upload_tickets WHERE id=?', [id]);
@@ -350,8 +382,8 @@ export async function uploadPart(
       transform(chunk, controller) {
         size += chunk.byteLength;
         if (size > expected) throw new Error('Upload part is larger than declared.');
-        if (part === 1 && header.length < 64) {
-          const next = new Uint8Array(Math.min(64, header.length + chunk.length));
+        if (part === 1 && header.length < 4096) {
+          const next = new Uint8Array(Math.min(4096, header.length + chunk.length));
           next.set(header);
           next.set(chunk.slice(0, next.length - header.length), header.length);
           header = next;
@@ -386,10 +418,11 @@ export async function uploadPart(
 export async function finalizeUpload(env: AppEnv, viewer: NonNullable<Viewer>, id: string) {
   const ticket = await getTicket(env, viewer, id);
   if (ticket.state === 'complete') {
-    const file = await first<FileRecord>(env, 'SELECT * FROM files WHERE id=?', [id]);
-    if (file) return file;
+    const existing = await first<FileRecord>(env, 'SELECT * FROM files WHERE id=?', [id]);
+    if (existing) return existing;
+    throw new Error('The completed file is no longer available.');
   }
-  if (ticket.state !== 'reserved' || ticket.expires_at < Date.now())
+  if (!['reserved', 'finalizing'].includes(ticket.state) || ticket.expires_at < Date.now())
     throw new Error('This upload is no longer active.');
   const parts = await rows<{ part_number: number; etag: string; size: number }>(
     env,
@@ -400,49 +433,102 @@ export async function finalizeUpload(env: AppEnv, viewer: NonNullable<Viewer>, i
     !ticket.validated ||
     parts.length !== Math.ceil(ticket.size / PART_SIZE) ||
     parts.some((p, i) => p.part_number !== i + 1) ||
-    parts.reduce((s, p) => s + p.size, 0) !== ticket.size
+    parts.reduce((n, p) => n + p.size, 0) !== ticket.size
   )
     throw new Error('Some file parts are missing. Retry the upload before saving.');
+  if (ticket.state === 'reserved') {
+    const claim = await run(
+      env,
+      "UPDATE upload_tickets SET state='finalizing',expires_at=? WHERE id=? AND state='reserved'",
+      [Date.now() + 3600000, id],
+    );
+    if (!claim.meta.changes)
+      throw new Error('This upload is already finishing or being cancelled. Please retry.');
+  }
   try {
     await env.FILES.resumeMultipartUpload(ticket.storage_key, ticket.upload_id).complete(
       parts.map((p) => ({ partNumber: p.part_number, etag: p.etag })),
     );
   } catch (error) {
-    const existing = await env.FILES.head(ticket.storage_key);
-    if (!existing || existing.size !== ticket.size || existing.customMetadata?.ticketId !== id)
+    const object = await env.FILES.head(ticket.storage_key);
+    if (!object || object.size !== ticket.size || object.customMetadata?.ticketId !== id)
       throw error;
   }
-  await env.DB.batch([
+  const statements = [
     env.DB.prepare(
-      "INSERT OR IGNORE INTO files(id,arrangement_id,owner_id,storage_key,filename,content_type,size,state,kind,rank,provenance) SELECT id,arrangement_id,user_id,storage_key,filename,content_type,size,'published',kind,(SELECT COALESCE(max(rank),-1)+1 FROM files WHERE arrangement_id=?),'Uploader confirmed permission to share.' FROM upload_tickets WHERE id=? AND state='reserved'",
+      "INSERT OR IGNORE INTO files(id,arrangement_id,owner_id,storage_key,filename,content_type,size,state,kind,rank,parent_id,provenance) SELECT id,arrangement_id,user_id,storage_key,filename,content_type,size,'published',kind,(SELECT COALESCE(max(rank),-1)+1 FROM files WHERE arrangement_id=?),parent_id,'Uploader confirmed permission to share.' FROM upload_tickets WHERE id=? AND state='finalizing'",
     ).bind(ticket.arrangement_id, id),
     env.DB.prepare(
       "UPDATE storage_quota SET used=used+?,reserved=reserved-? WHERE id='preview' AND changes()=1",
     ).bind(ticket.size, ticket.size),
     env.DB.prepare(
-      "UPDATE upload_tickets SET state='complete' WHERE id=? AND state='reserved'",
+      "INSERT OR IGNORE INTO storage_objects(storage_key,size,charged,state) SELECT storage_key,size,1,'active' FROM upload_tickets WHERE id=? AND state='finalizing'",
     ).bind(id),
-  ]);
-  if (ticket.kind === 'preview')
-    await run(env, 'UPDATE arrangements SET thumbnail=? WHERE id=?', [
-      '/files/' + id,
-      ticket.arrangement_id,
-    ]);
-  return (await first<FileRecord>(env, 'SELECT * FROM files WHERE id=?', [id]))!;
+    env.DB.prepare(
+      "UPDATE upload_tickets SET state='complete',reservation_active=0 WHERE id=? AND state='finalizing'",
+    ).bind(id),
+  ];
+  if (ticket.content_type === 'application/pdf') {
+    statements.push(
+      env.DB.prepare(
+        "INSERT OR IGNORE INTO processing_jobs(id,arrangement_id,file_id,type,status,created_at,updated_at) VALUES(?,?,?,'pdf-preview','pending',?,?)",
+      ).bind('pdf-' + id, ticket.arrangement_id, id, Date.now(), Date.now()),
+      env.DB.prepare('UPDATE arrangements SET published=0 WHERE id=?').bind(ticket.arrangement_id),
+    );
+  }
+  if (ticket.kind === 'preview') {
+    if (ticket.parent_id)
+      statements.push(
+        env.DB.prepare(
+          "UPDATE files SET state='deleted',deleted_at=? WHERE parent_id=? AND kind='preview' AND id!=? AND state='published'",
+        ).bind(Date.now(), ticket.parent_id, id),
+      );
+    statements.push(
+      env.DB.prepare('UPDATE arrangements SET thumbnail=? WHERE id=?').bind(
+        '/files/' + id,
+        ticket.arrangement_id,
+      ),
+    );
+  }
+  await env.DB.batch(statements);
+  const file = await first<FileRecord>(env, 'SELECT * FROM files WHERE id=?', [id]);
+  if (!file)
+    throw new Error(
+      'File finalization was interrupted. The reservation is retained; retry to recover it.',
+    );
+  return file;
 }
 export async function cancelUpload(env: AppEnv, viewer: NonNullable<Viewer>, id: string) {
   const t = await getTicket(env, viewer, id);
   if (t.state !== 'reserved') return;
-  await env.FILES.resumeMultipartUpload(t.storage_key, t.upload_id)
-    .abort()
-    .catch(() => undefined);
+  const claim = await run(
+    env,
+    "UPDATE upload_tickets SET state='cancelling' WHERE id=? AND state='reserved'",
+    [id],
+  );
+  if (!claim.meta.changes) return;
+  try {
+    await env.FILES.resumeMultipartUpload(t.storage_key, t.upload_id).abort();
+  } catch (error) {
+    const object = await env.FILES.head(t.storage_key);
+    if (!object && !/no.?such|not.?found|does not exist|10024/i.test(String(error))) throw error;
+  }
+  const referenced = await first(env, 'SELECT 1 FROM files WHERE storage_key=? LIMIT 1', [
+    t.storage_key,
+  ]);
+  if (referenced)
+    throw new Error(
+      'This file is still referenced; its reservation is retained for reconciliation.',
+    );
+  const object = await env.FILES.head(t.storage_key);
+  if (object) await env.FILES.delete(t.storage_key);
   await env.DB.batch([
     env.DB.prepare(
-      "UPDATE upload_tickets SET state='cancelled' WHERE id=? AND state='reserved'",
+      "UPDATE upload_tickets SET state='cancelled',reservation_active=0 WHERE id=? AND state='cancelling'",
     ).bind(id),
     env.DB.prepare(
       "UPDATE storage_quota SET reserved=max(0,reserved-?) WHERE id='preview' AND changes()=1",
-    ).bind(t.size),
+    ).bind(t.reservation_active ? t.size : 0),
   ]);
 }
 export async function removeFile(env: DbEnv, viewer: Viewer, id: string) {
@@ -460,6 +546,14 @@ export async function removeFile(env: DbEnv, viewer: Viewer, id: string) {
 }
 export async function deleteArrangement(env: AppEnv, viewer: NonNullable<Viewer>, id: string) {
   await ownedArrangement(env, viewer, id);
+  if (
+    await first(
+      env,
+      "SELECT 1 FROM upload_tickets WHERE arrangement_id=? AND state IN ('finalizing','cancelling','collecting') LIMIT 1",
+      [id],
+    )
+  )
+    throw new Error('A file transfer is still being reconciled. Retry after maintenance finishes.');
   const tickets = await rows<{ id: string }>(
     env,
     "SELECT id FROM upload_tickets WHERE arrangement_id=? AND state='reserved'",

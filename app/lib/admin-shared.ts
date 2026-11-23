@@ -17,7 +17,7 @@ export const fields: Record<string, string[]> = {
   catalog: ['title', 'available_at', 'published', 'winner'],
   tags: ['name', 'slug', 'type', 'parent_id', 'rank', 'description', 'rights_warning'],
   composers: ['name', 'slug', 'bio', 'website', 'contact_url', 'private_email', 'notice'],
-  users: ['name', 'role'],
+  users: ['name', 'role', 'disabled'],
   pages: ['slug', 'title', 'body', 'section', 'rank', 'published'],
   preferences: ['key', 'value'],
   files: ['filename', 'rank'],

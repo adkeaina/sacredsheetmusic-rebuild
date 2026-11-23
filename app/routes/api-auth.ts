@@ -6,7 +6,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   return createAuth(context.get(cloudflareContext).env, request).handler(request);
 }
 export async function action({ request, context }: ActionFunctionArgs) {
-  const { env } = context.get(cloudflareContext);
+  const { env, authState } = context.get(cloudflareContext);
   await requestLimit(env, request, 'authentication', 20);
   return createAuth(env, request).handler(request);
 }
