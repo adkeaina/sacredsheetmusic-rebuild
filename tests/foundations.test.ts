@@ -18,6 +18,7 @@ describe('persistent data integrity', () => {
     expect(db.prepare('SELECT sum(rating) AS points FROM votes').get()?.points).toBe(5);
     db.close();
   });
+  it('allows arrangements to share a permitted media object', () => { const db=database(); db.exec("INSERT INTO composers(id,name,slug) VALUES('c','Sample','sample'); INSERT INTO arrangements(id,code,title,composer_id) VALUES('a','a','A','c'),('b','b','B','c'); INSERT INTO files(id,arrangement_id,storage_key,filename,content_type,size) VALUES('f1','a','shared.pdf','sample.pdf','application/pdf',100),('f2','b','shared.pdf','sample.pdf','application/pdf',100);"); expect(db.prepare('SELECT count(*) AS n FROM files').get()?.n).toBe(2);db.close(); });
   it('keeps file references valid when an arrangement is deleted', () => {
     const db = database();
     db.exec("INSERT INTO composers(id,name,slug) VALUES('c','Sample','sample'); INSERT INTO arrangements(id,code,title,composer_id) VALUES('a','sample-piece','Sample Piece','c'); INSERT INTO files(id,arrangement_id,storage_key,filename,content_type,size,state) VALUES('f','a','files/f','sample.pdf','application/pdf',100,'published'); DELETE FROM arrangements WHERE id='a';");

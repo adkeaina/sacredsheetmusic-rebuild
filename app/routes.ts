@@ -1,2 +1,2 @@
-import { index, type RouteConfig } from '@react-router/dev/routes';
-export default [index('routes/home.tsx')] satisfies RouteConfig;
+import {index,route,type RouteConfig} from '@react-router/dev/routes';
+export default [index('routes/home.tsx'),route('search','routes/catalog.tsx',{id:'search'}),route('music/most_recently_added','routes/catalog.tsx',{id:'recent'}),route('song/:code','routes/song.tsx'),route('s/:code','routes/song.tsx',{id:'song-alias'}),route('music/wishlist','routes/bookmarks.tsx'),route('composers','routes/composer.tsx',{id:'composers'}),route('composer/:slug','routes/composer.tsx'),route('files/:id','routes/files.ts'),route('about/:slug','routes/content.tsx'),route('questions/ask','routes/content.tsx',{id:'contact'}),route('questions/faq','routes/content.tsx',{id:'faq'}),route('api/search','routes/api-search.ts'),route('*','routes/catalog.tsx',{id:'category'})] satisfies RouteConfig;
